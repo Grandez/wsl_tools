@@ -1,0 +1,1 @@
+wt new-tab cmd /k p:\bin\wsl_vpnkit ; new-tab cmd /k p:\bin\wsl_geiser3 ; new-tab cmd /k p:\bin\wsl_geiser4

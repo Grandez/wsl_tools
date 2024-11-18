@@ -1,0 +1,11 @@
+
+PATH=.:$PATH
+cd $HOME
+screenfetch
+
+echo `date +%X` - Ejecutando profile >> /tmp/geiser.log
+ss -tulpn | grep -q 2555
+if [ $? -gt 0 ] ; then 
+   echo -e `date +%X` - ${BLUE} Iniciando Sistemas ${NOCOLOR}
+   $HOME/start.sh
+fi

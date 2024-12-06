@@ -8,7 +8,9 @@
 
 SET PWD=%CD%
 
-:: Chequear WSL
+ECHO Verificando sistema
+
+:: Chequear programas
 
 wsl -l > \\.\NUL 2> \\.\NUL
 IF %ERRORLEVEL% NEQ 0 (
@@ -18,6 +20,13 @@ IF %ERRORLEVEL% NEQ 0 (
 
 : Chequear que es WSL 2
 
+git --version > \\.\NUL 2> \\.\NUL
+IF %ERRORLEVEL% NEQ 0 (
+   ECHO FALTA GIT
+   exit /b 32
+)   
+
+ECHO Preparando entorno
 
 :: SOLO SE GESTIONAN DISCOS NO DIRECTORIOS
 
@@ -31,38 +40,31 @@ IF %ERRORLEVEL% NEQ 0 (
 )   
 
 :: Creamos el directorio Shared
+MKDIR %ROOT%:\Shared > \\.\NUL 2> \\.\NUL
 %ROOT%:
-CD \
-MKDIR Shared > \\.\NUL 2> \\.\NUL
-CD \Shared
+CD %ROOT%:\Shared
 IF %ERRORLEVEL% NEQ 0 (
    ECHO NO SE HA PODIDO CREAR EL DIRECTORIO Shared en %ROOT%
    CD %PWD%
    EXIT /B 32
 )   
-
 :: Variable de entorno
 SETX /s %COMPUTERNAME% /U %USERNAME% WSL_ROOT %ROOT%: > \\.\NUL 2> \\.\NUL
 
-:: Obtenemos los scripts
-CD wsl_tools
-IF %ERRORLEVEL% NEQ 0 (
-   git clone https://github.com/Grandez/wsl_tools.git
-   IF %ERRORLEVEL% NEQ 0 (
-      ECHO NO SE HAN PODIDO OBTENER LOS SCRIPTS 
-      CD %PWD%      
-      EXIT /B 32
-   )   
-) ELSE (
-   git clone https://github.com/Grandez/wsl_tools.git
-   IF %ERRORLEVEL% NEQ 0 (
-      ECHO NO SE HAN PODIDO OBTENER LOS SCRIPTS 
-      CD %PWD%      
-      EXIT /B 32
-   )   
-)  
+ECHO Recuperando scripts
 
+:: Obtenemos los scripts
+SET METHOD=pull
+CD wsl_tools
+IF %ERRORLEVEL% NEQ 0 SET METHOD=clone
+
+git %METHOD% https://github.com/Grandez/wsl_tools.git > \\.\NUL 2> \\.\NUL
+IF %ERRORLEVEL% NEQ 0 (
+   ECHO NO SE HAN PODIDO OBTENER LOS SCRIPTS 
+   CD %PWD%      
+   EXIT /B 32
+)   
 
 ECHO Preparacion incial del entorno Windows realizada
 ECHO Siguiente paso: %ROOT%:\Shared\wsl_tools\wsl_create_base
-CD %PWD%
+CD %PWD% > \\.\NUL 2> \\.\NUL

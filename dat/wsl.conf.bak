@@ -12,7 +12,7 @@ hostname           = base
 # generateResolvConf = false
 
 [interop]
-#enabled           = true
+enabled           = true
 #appendWindowsPath = true
 
 [user]

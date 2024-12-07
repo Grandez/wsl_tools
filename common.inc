@@ -17,5 +17,12 @@ noroot () {
 }
 
 info() {
-   echo -e ${BOLD}`date +%T` - $@${NC}
+   echo -e ${BOLD}`date +%T` - $@${NC} | tee -a $LOG
+}
+
+log_file () {
+   ROOT=${0%%/*}
+   NAME=${0##*/}
+   NAME=${NAME%%.*}
+   export LOG=/tmp/${NAME}.log
 }

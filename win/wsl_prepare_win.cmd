@@ -8,6 +8,10 @@
 
 SET PWD=%CD%
 
+
+IF /I "%~1"=="-H"     GOTO HELP
+IF /I "%~1"=="--HELP" GOTO HELP
+
 ECHO Verificando sistema
 
 :: Chequear programas
@@ -20,6 +24,7 @@ IF %ERRORLEVEL% NEQ 0 (
 
 : Chequear que es WSL 2
 
+wsl --update > \\.\NUL 2> \\.\NUL
 git --version > \\.\NUL 2> \\.\NUL
 IF %ERRORLEVEL% NEQ 0 (
    ECHO FALTA GIT
@@ -49,7 +54,7 @@ IF %ERRORLEVEL% NEQ 0 (
    EXIT /B 32
 )   
 :: Variable de entorno
-SETX /s %COMPUTERNAME% /U %USERNAME% WSL_ROOT %ROOT%: > \\.\NUL 2> \\.\NUL
+SETX /s %COMPUTERNAME% /U %USERNAME% WSL_MACHINES_DRIVE %ROOT% > \\.\NUL 2> \\.\NUL
 
 ECHO Recuperando scripts
 
@@ -65,6 +70,20 @@ IF %ERRORLEVEL% NEQ 0 (
    EXIT /B 32
 )   
 
-ECHO Preparacion incial del entorno Windows realizada
+ECHO Preparacion inicial del entorno Windows realizada
 ECHO Siguiente paso: %ROOT%:\Shared\wsl_tools\wsl_create_base
 CD %PWD% > \\.\NUL 2> \\.\NUL
+GOTO :END
+
+:HELP
+   ECHO  Prepara y verifica el sistema Windows para usart WSL
+   ECHO %0 [virtual_drive]
+   ECHO     virtual_drive - Disco virtual donde se guardaran las distros y su informacion
+   ECHO    wsl_source  Imagen a partir de la que se va a crear
+   ECHO    %BOLD%Por defecto se asume M: %NC%
+   GOTO END
+   
+   
+
+:END 
+   EXIT /B %RC%

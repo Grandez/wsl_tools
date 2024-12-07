@@ -3,6 +3,13 @@
 # Script de configuracion de la plantilla de las diferentes distros WSL
 # Requiere common.inc en /mnt/s/bin
 
+echo Ejecutando el fichero de configuracion de Base
+source /mnt/s/bin/common.inc
+
+. wsl_default_packages.sh
+
+exit 0
+
 trap "exit 1" TERM
 export PIDP=$$
 

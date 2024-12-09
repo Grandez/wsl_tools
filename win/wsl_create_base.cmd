@@ -7,7 +7,7 @@
 
 SET WSL_SRC=Ubuntu-24.04
 SET WSL_TGT=base
-SET FORCE=0
+SET FORCE=1
 
 SET mypath=%~dp0
 SET DIR=%mypath:~0,-1%
@@ -53,6 +53,7 @@ IF %ERRORLEVEL% NEQ 0 (
 )   
 
 REM Llamamos al script generico de crear maquinas
+
 SET MODO=--clean
 IF %FORCE% EQU 0 SET MODO=--keep
 CALL %DIR%\wsl_create_wsl  --from %WSL_SRC% --name %WSL_TGT% %MODO%

@@ -29,8 +29,6 @@ IF %ERRORLEVEL% NEQ 0 (
    exit /b 16
 )   
 
-ECHO cOMANDO %*
-
 :: NO SE HACE CONTROL DE ERRORES
 :: YA FALLARA POR ALGUN OTRO SITIO
 
@@ -44,9 +42,8 @@ ECHO cOMANDO %*
    SHIFT
    IF NOT "%1" == "" goto GETOPTS
 
-echo %WSL_SRC%
-echo %WSL_TGT%
-echo %FORCE%
+SET WSL_SRC=%WSL_SRC: =%     
+SET WSL_TGT=%WSL_TGT: =%     
 
 IF "%WSL_TGT%" == "" (
    ECHO %ERR%No se ha indicado el nombre de la maquina%NC%
@@ -54,7 +51,7 @@ IF "%WSL_TGT%" == "" (
 )
 
 WSL --unregister %WSL_TGT% > \\.\NUL 2> \\.\NUL
-IF %FORCE% EQU 1 RD /S /Q %WSL_MACHINES_DRIVE%\%WSL_TGT% > \\.\NUL 2> \\.\NUL
+IF %FORCE% EQU 1 RD /S /Q %WSL_MACHINES_DRIVE%\%WSL_TGT% & :: > \\.\NUL 2> \\.\NUL
 
 CALL :PROGRESS Exportando distro: %WSL_SRC%
 WSL --export %WSL_SRC% %TMP%/wsl.tar > \\.\NUL 2> \\.\NUL
@@ -62,8 +59,8 @@ IF %ERRORLEVEL% NEQ 0 CALL :ERR 1 No se ha podido exportar la maquina %WSL_SRC% 
 if %RC%         NEQ 0 GOTO :END
 
 CALL :PROGRESS Generando distro: %WSL_TGT%
-MD   %WSL_MACHINE_DRIVE%\%WSL_TGT% > \\.\NUL 2> \\.\NUL
-WSL --import %WSL_TGT% %WSL_MACHINES_DRIVE%\%WSL_TGT% %TMP%\wsl.tar > \\.\NUL 2> \\.\NUL
+MD   %WSL_MACHINES_DRIVE%\%WSL_TGT% & :: > \\.\NUL 2> \\.\NUL
+WSL --import %WSL_TGT% %WSL_MACHINES_DRIVE%\%WSL_TGT% %TMP%\wsl.tar & :: > \\.\NUL 2> \\.\NUL
 IF %ERRORLEVEL% NEQ 0 CALL :ERR 1 No se ha podido importar la maquina %WSL_TGT%
 if %RC%         NEQ 0 GOTO :END
 

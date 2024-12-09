@@ -88,9 +88,11 @@ descarga_paquetes() {
                           x11-apps   \
                           mesa-utils \
                           gedit      \ 
+                          curl       \
+                          ca-certificates \                        
                           libcurl4-openssl-dev \
                           dialog     >> $LOG 2>> $LOG
-   
+    
    apt -qq install -y r-base      \
                       r-base-dev  \
                       neofetch  >> $LOG 2>> $LOG

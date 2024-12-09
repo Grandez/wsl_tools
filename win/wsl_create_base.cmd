@@ -73,6 +73,7 @@ IF %ERRORLEVEL% NEQ 0 CALL :ERR 1 No se ha ejecutado correctamente la fase de co
 :: CALL :INFO     Acceda a la distro con el comando %NC%%BOLD%wsl -d %WSL_TGT%%NC%
 :: CALL :INFO     Ejecute %NC%%BOLD%/mnt/c/windows/temp/wsl_base_configure%NC%
 CALL :PROGRESS Proceso realizado
+CALL :PROGRESS Se recomienda reiniciar WSL (wsl --shutdown)
 
 SET RC=%ERRORLEVEL%
 exit /b RC

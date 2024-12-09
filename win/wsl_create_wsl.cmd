@@ -12,7 +12,7 @@
 
 SET WSL_SRC=base
 SET WSL_TGT=
-SET FORCE=0
+SET FORCE=1
 
 SET mypath=%~dp0
 SET DIR=%mypath:~0,-1%
@@ -29,6 +29,8 @@ IF %ERRORLEVEL% NEQ 0 (
    exit /b 16
 )   
 
+ECHO cOMANDO %*
+
 :: NO SE HACE CONTROL DE ERRORES
 :: YA FALLARA POR ALGUN OTRO SITIO
 
@@ -37,10 +39,14 @@ IF %ERRORLEVEL% NEQ 0 (
    IF /I  "%~1" == "--HELP"   GOTO HELP
    IF /I  "%1"  == "--from"   SET WSL_SRC=%2 & shift
    IF /I  "%1"  == "--name"   SET WSL_TGT=%2 & shift
-   IF /I  "%1"  == "--force"  SET FORCE=1    & shift
-   IF NOT "%1"  == ""         SET WSL_TGT=%1 & shift
+   IF /I  "%1"  == "--clean"  SET FORCE=1
+   IF /I  "%1"  == "--keep"   SET FORCE=0
    SHIFT
    IF NOT "%1" == "" goto GETOPTS
+
+echo %WSL_SRC%
+echo %WSL_TGT%
+echo %FORCE%
 
 IF "%WSL_TGT%" == "" (
    ECHO %ERR%No se ha indicado el nombre de la maquina%NC%
@@ -78,10 +84,11 @@ exit /b 0
   GOTO :END
 
 :HELP
-   ECHO %0 wsl_target [wsl_WSL_SRC]
-   ECHO    wsl_target  Nombre de la distro WSL a crear
-   ECHO    wsl_WSL_SRC  Imagen a partir de la que se va a crear
-   ECHO    %BOLD%Nota: Se asume que el disco virtual de maquinas es M: %NC%
+   ECHO Crea una distro a partir de una existente
+   ECHO %0 [--from distro_base] [--name distro_nueva] [ --clean | --keep ]
+   ECHO    %BOLD%--from distro_base%NC% - Nombre de la distro WSL a usar como plantilla. Por defecto %BOLD%base%NC%
+   ECHO    %BOLD%--name distro_nueva%NC% - Nombre de la distro nueva
+   ECHO    %BOLD%clean | keep%NC% - si keep y la maquina existia se mantiene la configuracion
    GOTO END
    
 :END 

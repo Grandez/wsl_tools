@@ -24,8 +24,8 @@ CALL %DIR%\wsl_common_win
 :: YA FALLARA POR ALGUN OTRO SITIO
 
 :GETOPTS
-   IF /I "%~1"=="-H"       GOTO HELP
-   IF /I "%~1"=="--HELP"   GOTO HELP
+   IF /I "%~1"== "-H"      GOTO HELP
+   IF /I "%~1"== "--HELP"  GOTO HELP
    IF /I "%1" == "--from"  SET WSL_SRC=%2 & shift
    IF /I "%1" == "--name"  SET WSL_TGT=%2 & shift
    IF /I "%1" == "-f"      SET WSL_SRC=%2 & shift
@@ -53,7 +53,9 @@ IF %ERRORLEVEL% NEQ 0 (
 )   
 
 REM Llamamos al script generico de crear maquinas
-CALL %DIR%\wsl_create_wsl  --from %WSL_SRC% --name %WSL_TGT% --clean
+SET MODO=--clean
+IF %FORCE% EQU 0 SET MODO=--keep
+CALL %DIR%\wsl_create_wsl  --from %WSL_SRC% --name %WSL_TGT% %MODO%
 IF %ERRORLEVEL% NEQ 0 EXIT /B %ERRORLEVEL%
 
 REM Copiamos los scripts a TEMP de windows (ese no falla)

@@ -1,0 +1,102 @@
+#!/bin/bash
+###########################################################
+# Script de configuracion de la plantilla de las diferentes distros WSL
+# Requiere common.inc en el mismo directorio
+#
+# Version 2
+# Se simplifica la configuracion para ponerla en un
+# solo script
+#
+# Se debe incluir en el script:
+# USER = Usuario corporativo
+# PWD  = password del usuario corporativo
+# GROUP = grupo del usuario corporativo
+#
+# La ruta a los archivos windows se pasa por parametro
+#
+###########################################################
+preload_err() {
+  RED='\033[0;31m'
+  NC='\033[0m' 
+  echo -e "${RED}FALTA ES SCRIPT $* ${NC}"        
+}
+trap "exit 1" TERM
+export PIDP=$$
+
+# Prepara cosas
+source /mnt/c/windows/temp/wsl_common.sh
+if [ $? -ne 0 ] ; then preload_err wsl_common.sh && exit 127 ; fi
+    
+cat /mnt/c/windows/temp/wsl_env.cmd | sed s/SET/export/g | sed s/REM/#/g > /mnt/c/windows/temp/wsl_env.sh
+if [ $? -ne 0 ] ; then preload_err wsl_env.cmd && exit 127 ; fi
+    
+source /mnt/c/windows/temp/wsl_env.sh
+if [ $? -ne 0 ] ; then preload_err wsl_common.sh && exit 127 ; fi
+
+export ROOT=${WSL_MACHINES_WSL:3}    
+
+# source ${BASE}/wsl_base_dialog.inc
+
+make_fs() {
+  rm -f /mnt/m
+  rm -f /mnt/s  
+  ln -s /mnt/c/${ROOT}/shared  /mnt/s
+  ln -s /mnt/c/${ROOT}/${WSL_DISTRO_NAME} /mnt/m
+}
+make_users() {
+   info Configurando usuarios
+   
+   MYSELF=`id -u 1000 -n`
+   cat /mnt/s/wsl_tools/dat/profile.conf >> /home/${MYSELF}/.profile
+   
+   echo "export DISPLAY=$(grep -m 1 nameserver /etc/resolv.conf | awk '{print $2}'):0" >> /home/${MYSELF}/.bashrc
+   echo "export LIBGL_ALWAYS_INDIRECT=1"                                               >> /home/${MYSELF}/.bashrc
+   
+   groupadd -g 3000 $WSL_GROUP 
+   useradd -u 2000 -p $PWD -G $WSL_GROUP -d /home/$WSL_USER $WSL_USER
+   cp /home/${MYSELF}/.* /home/${WSL_USER}
+   chown ${WSL_USER}:${WSL_USER} /home/${WSL_USER}/.*
+}
+make_wsl() {
+   info Configurando WSL y red
+   cp  -f /mnt/s/wsl_tools/dat/wsl.conf   /etc/wsl.conf
+   sed -i "s/HOSTNAME/$WSL_DISTRO_NAME/g" /etc/wsl.conf
+   sed -i "s/USER/$MYSELF/g"              /etc/wsl.conf
+   
+   grep -q $WSL_DISTRO_NAME /etc/hosts
+   if [ $? -ne 0 ] ; then
+       echo "127.0.0.1      $WSL_DISTRO_NAME"  >> /etc/hosts
+   fi    
+}
+descarga_paquetes() {
+   info Descargando paquetes basicos    
+   apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E298A3A825C0D65DFD57CBB651716619E084DAB9    >> $LOG 2>> $LOG
+   add-apt-repository -y "deb https://cloud.r-project.org/bin/linux/ubuntu $(lsb_release -cs)-cran40/"  >> $LOG 2>> $LOG
+
+   echo PERO PORQUE CO..... ME SACAS MENSAJES???????
+   
+   apt-get -qq update &>> $LOG
+   
+   apt -qq update
+   apt-get -qq install -y net-tools  \
+                          x11-apps   \
+                          mesa-utils \
+                          gedit      \ 
+                          dialog     >> $LOG 2>> $LOG
+   
+   apt -qq install -y r-base  \
+                      neofetch  >> $LOG 2>> $LOG
+    
+}
+
+test `id -u` -gt 0 && noroot
+
+# get_config            # Interfaz para informacion de usuario
+
+info Iniciando configuracion
+make_fs
+create_log_file $0
+descarga_paquetes
+make_users
+make_wsl
+

@@ -1,22 +1,9 @@
-:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-: Variables de entorno de uso comun
-:
-:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+REM Variables de configuracion para WSL
+REM ATENCION A LA DIFERENCIA ENTRE WSL_MACHINES_WIN Y WSL_MACHINES_WSL
 
-: Directorio donde se almacenan las maquinas sin \
-SET MACHINE_DRIVE=M:
-
-
-SET RC=0
-SET NC=[0m 
-SET BOLD=[1m
-SET GREEN=[32m
-SET RED=[31m
-
-SET INFO=%GREEN%
-SET ERR=%RED%
-
-SET WSL_MACHINES_DRIVE=N
-
-SET T=%TIME:~0,8%
-
+SET WSL_MACHINES_DRIVE=M:
+SET WSL_MACHINES_WIN=C:\Maquinas
+SET WSL_MACHINES_WSL=C:/Maquinas
+SET WSL_USER=kvothe
+SET WSL_PWD=kvothe
+SET WSL_GROUP=temerant

@@ -1,124 +1,101 @@
 :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 :: Script para crear maquina la maquina base
-:: LAS FUNCIONES "VAN AL FINAL"
 ::
 :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
 @ECHO OFF
 
-SET SOURCE=Ubuntu-24.04
-SET BASE=base
+SET WSL_SRC=Ubuntu-24.04
+SET WSL_TGT=base
 SET FORCE=0
 
 SET mypath=%~dp0
-SET dir=%mypath:~0,-1%
+SET DIR=%mypath:~0,-1%
 
-IF /I "%~1"=="-H"     GOTO HELP
-IF /I "%~1"=="--HELP" GOTO HELP
 
-CALL %dir%\wsl_env
+CALL %DIR%\wsl_env
 IF %ERRORLEVEL% NEQ 0 (
    ECHO Falta el script de variables de entorno wsl_env
    exit /b 16
 )   
+CALL %DIR%\wsl_common_win
 
 :: NO SE HACE CONTROL DE ERRORES
 :: YA FALLARA POR ALGUN OTRO SITIO
 
 :GETOPTS
- IF /I "%1" == "--from"  SET SOURCE=%2 & shift
- IF /I "%1" == "--name"  SET BASE=%2   & shift
- IF /I "%1" == "--force" SET FORCE=1   & shift
- SHIFT
- IF NOT "%1" == "" goto GETOPTS
+   IF /I "%~1"=="-H"       GOTO HELP
+   IF /I "%~1"=="--HELP"   GOTO HELP
+   IF /I "%1" == "--from"  SET WSL_SRC=%2 & shift
+   IF /I "%1" == "--name"  SET WSL_TGT=%2 & shift
+   IF /I "%1" == "-f"      SET WSL_SRC=%2 & shift
+   IF /I "%1" == "-n"      SET WSL_TGT=%2 & shift
+   SHIFT
+   IF NOT "%1" == "" goto GETOPTS
 
-IF %FORCE% EQU 1 CALL :CLEAN
-
+REM Actualizamos WSL  
 CALL :PROGRESS Actualizando WSL
-wsl --update > \\.\NUL 2> \\.\NUL
+WSL --update > \\.\NUL 2> \\.\NUL
 
+REM Descargamos la distro de Store (lo del unregister se lo pasa por el forro)
 CALL :PROGRESS Obteniendo distro del Store
-wsl --install %SOURCE% > \\.\NUL 2> \\.\NUL
+WSL --unregister %WSL_SRC% > \\.\NUL 2> \\.\NUL
+
+CALL :INFO     Cuando se le pregunte introduzca su usuario y password
+CALL :INFO     Cuando se inicie el shell teclee: %NC%%BOLD%sudo passwd%NC%
+CALL :INFO     Establezca la password de root
+CALL :INFO     teclee %NC%%BOLD%exit%NC%%WARN% para continuar%NC%
+
+WSL --install    %WSL_SRC% 
 IF %ERRORLEVEL% NEQ 0 (
-   ECHO No se ha podido descargar la distro %SOURCE%
+   ECHO No se ha podido descargar la distro %WSL_SRC%
    exit /b 32
 )   
 
-echo BASE %BASE%
-echo SOURCE %SOURCE%
-echo FIRCE %FORCE%
+REM Llamamos al script generico de crear maquinas
+CALL %DIR%\wsl_create_wsl  --from %WSL_SRC% --name %WSL_TGT% --clean
+IF %ERRORLEVEL% NEQ 0 EXIT /B %ERRORLEVEL%
 
-exit /b 3
+REM Copiamos los scripts a TEMP de windows (ese no falla)
+COPY /Y /V %WSL_MACHINES_DRIVE%\shared\wsl_tools\wsl*            c:\windows\Temp > \\.\NUL 2> \\.\NUL
+COPY /Y /V %WSL_MACHINES_DRIVE%\shared\wsl_tools\win\wsl_env.cmd c:\windows\Temp > \\.\NUL 2> \\.\NUL
+echo SET WSL_DISTRO_NAME=%WSL_TGT% >> c:\windows\Temp\wsl_env.sh
 
-
-
-SET LOG=%TMP%/%~n0.log
-SET WSL_SRC=base
-
-IF "%~1"=="" GOTO NOPARM
-IF /I "%~1"=="-H"     GOTO HELP
-IF /I "%~1"=="--HELP" GOTO HELP
-
-ECHO. > %LOG%
-
-SET WSL_TGT=%~1
-
-IF NOT "%~2"=="" SET WSL_SRC="%~2"
-
-CALL :PROGRESS Exportando distro: %WSL_SRC%
-WSL --export %WSL_SRC% %TMP%/wsl.tar >> %LOG% 2>&1
-IF %ERRORLEVEL% NEQ 0 CALL :ERR 1 No se ha podido exportar la maquina %WSL_SRC% (Existe?)
+IF %ERRORLEVEL% NEQ 0 CALL :ERR 1 No se han podido preparar los scripts de ejecucion
 if %RC%         NEQ 0 GOTO :END
 
-CALL :PROGRESS Generando distro: %WSL_TGT%
-WSL --unregister %WSL_TGT% >> %LOG% 2>&1
-RD /Q /S %MACHINE_DRIVE%\%WSL_TGT%
-MD   %MACHINE_DRIVE%\%WSL_TGT%
 
-WSL --import %WSL_TGT% %MACHINE_DRIVE%\%WSL_TGT% %TMP%\wsl.tar >> %LOG% 2>&1
-IF %ERRORLEVEL% NEQ 0 CALL :ERR 1 No se ha podido importar la maquina %WSL_TGT%
-if %RC%         NEQ 0 GOTO :END
+REM Ejecutamos el script en la distro usando el profile root
+CALL :PROGRESS Configurando %WSL_TGT%
+WSL -d %WSL_TGT% -- /mnt/c/windows/temp/wsl_configure_base
+IF %ERRORLEVEL% NEQ 0 CALL :ERR 1 No se ha ejecutado correctamente la fase de configuracion. Chequee wsl_configure_base.log
 
-CALL :PROGRESS Configurando distro
-: Aqui ejecutamos los scripts
+:: CALL :INFO     Acceda a la distro con el comando %NC%%BOLD%wsl -d %WSL_TGT%%NC%
+:: CALL :INFO     Ejecute %NC%%BOLD%/mnt/c/windows/temp/wsl_base_configure%NC%
+CALL :PROGRESS Proceso realizado
 
-CALL :PROGRESS Limpiando
-DEL /S /Q /F %TMP%\wsl.tar
+SET RC=%ERRORLEVEL%
+exit /b RC
 
-CALL :PROGRESS Hecho
-
-
-GOTO END
-
-:CLEAN
-
-  wsl --unregister %SOURCE% 2> \\.\NUL
-  wsl --unregister %BASE%   2> \\.\NUL
-  GOTO :EOF
-  
 :PROGRESS
   echo %GREEN%%T% - %* %NC%
   GOTO :EOF
-
-:NOPARM
-   echo %RED%%T% - Falta el nombre de la maquina a crear %NC% 1>&2
-   GOTO :END
-
+:INFO
+  echo %WARN%%T% - %* %NC%
+  GOTO :EOF
 :ERR
   SET RC=%1
   SHIFT
   ECHO %RED%%T% - %* %NC% 1>&2
   ECHO %0 >> %LOG% 
   GOTO :END
-
 :HELP
-   ECHO %0 wsl_target [wsl_source]
-   ECHO    wsl_target  Nombre de la distro WSL a crear
-   ECHO    wsl_source  Imagen a partir de la que se va a crear
+   ECHO Crea la distro base
+   ECHO %0 wsl_create_base [--name nombre] [--from distro_name]
+   ECHO    --name nombre: Nombre de la maquina base. Por defecto: %BOLD%base%NC%
+   ECHO    --from distro_name: Origen de la distro del Store. Por defecto: %BOLD%Ubuntu-24.04%NC%
    ECHO    %BOLD%Nota: Se asume que el disco virtual de maquinas es M: %NC%
    GOTO END
    
-   
-
 :END 
    EXIT /B %RC%

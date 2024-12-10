@@ -2,10 +2,12 @@
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
+BLUE='\033[0;34m'
 BOLD='\033[1m'
 NC='\033[0m' 
 
 INFO=$GREEN
+WARN=$BLUE
 ERR=$RED
 
 2stderr() { echo -e $@ 1>&2;  }
@@ -21,6 +23,10 @@ noroot () {
 
 info() {
    echo -e ${INFO}`date +%T` - $@${NC} | tee -a $LOG
+}
+
+info2() {
+   echo -e ${WARN}`date +%T` - $@${NC} | tee -a $LOG
 }
 
 err() {

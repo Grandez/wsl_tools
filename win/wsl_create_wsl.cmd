@@ -12,6 +12,7 @@
 
 SET WSL_SRC=base
 SET WSL_TGT=
+SET WSL_TYP=
 SET FORCE=1
 
 SET mypath=%~dp0
@@ -37,6 +38,7 @@ IF %ERRORLEVEL% NEQ 0 (
    IF /I  "%~1" == "--HELP"   GOTO HELP
    IF /I  "%1"  == "--from"   SET WSL_SRC=%2 & shift
    IF /I  "%1"  == "--name"   SET WSL_TGT=%2 & shift
+   IF /I  "%1"  == "--type"   SET WSL_TYP=%2 & shift
    IF /I  "%1"  == "--clean"  SET FORCE=1
    IF /I  "%1"  == "--keep"   SET FORCE=0
    SHIFT
@@ -51,7 +53,7 @@ IF "%WSL_TGT%" == "" (
 )
 
 WSL --unregister %WSL_TGT% > \\.\NUL 2> \\.\NUL
-IF %FORCE% EQU 1 RD /S /Q %WSL_MACHINES_DRIVE%\%WSL_TGT% & :: > \\.\NUL 2> \\.\NUL
+IF %FORCE% EQU 1 RD /S /Q %WSL_MACHINES_DRIVE%\%WSL_TGT% > \\.\NUL 2> \\.\NUL
 
 CALL :PROGRESS Exportando distro: %WSL_SRC%
 WSL --export %WSL_SRC% %TMP%/wsl.tar > \\.\NUL 2> \\.\NUL
@@ -60,12 +62,17 @@ if %RC%         NEQ 0 GOTO :END
 
 CALL :PROGRESS Generando distro: %WSL_TGT%
 MD   %WSL_MACHINES_DRIVE%\%WSL_TGT% & :: > \\.\NUL 2> \\.\NUL
-WSL --import %WSL_TGT% %WSL_MACHINES_DRIVE%\%WSL_TGT% %TMP%\wsl.tar & :: > \\.\NUL 2> \\.\NUL
+WSL --import %WSL_TGT% %WSL_MACHINES_DRIVE%\%WSL_TGT% %TMP%\wsl.tar > \\.\NUL 2> \\.\NUL
 IF %ERRORLEVEL% NEQ 0 CALL :ERR 1 No se ha podido importar la maquina %WSL_TGT%
 if %RC%         NEQ 0 GOTO :END
 
 CALL :PROGRESS Limpiando
 DEL /S /Q /F %TMP%\wsl.tar > \\.\NUL 2> \\.\NUL
+
+REM Ejecutamos el script en la distro usando el profile root
+CALL :PROGRESS Configurando %WSL_TGT%
+WSL -d %WSL_TGT% -u root -- /mnt/s/wsl_tools/wsl_configure_wsl %WSL_TYP%
+IF %ERRORLEVEL% NEQ 0 CALL :ERR 1 No se ha ejecutado correctamente la fase de configuracion. Chequee wsl_configure_wsl.log
 
 exit /b 0
   
@@ -85,6 +92,7 @@ exit /b 0
    ECHO %0 [--from distro_base] [--name distro_nueva] [ --clean | --keep ]
    ECHO    %BOLD%--from distro_base%NC% - Nombre de la distro WSL a usar como plantilla. Por defecto %BOLD%base%NC%
    ECHO    %BOLD%--name distro_nueva%NC% - Nombre de la distro nueva
+   ECHO    %BOLD%--TYPE TIPO%NC% - Indica el tipo de distro a crear
    ECHO    %BOLD%clean | keep%NC% - si keep y la maquina existia se mantiene la configuracion
    GOTO END
    

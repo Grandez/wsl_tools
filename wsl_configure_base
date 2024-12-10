@@ -91,14 +91,17 @@ descarga_paquetes() {
                           curl       \
                           ca-certificates \                        
                           libcurl4-openssl-dev \
+                          software-properties-common \
                           dialog     >> $LOG 2>> $LOG
     
    apt -qq install -y r-base      \
                       r-base-dev  \
+                      apt-transport-https \
                       neofetch  >> $LOG 2>> $LOG
 
+
    info Instalando ecosistema R 
-   R -e 'install.packages("RestRserve", dependencies=TRUE)'    
+   R -e 'install.packages(c("xml2", "RestRserve"), dependencies=TRUE)'    >> $LOG 2>> $LOG     
 }
 
 test `id -u` -gt 0 && noroot

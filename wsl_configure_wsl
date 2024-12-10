@@ -1,0 +1,87 @@
+#!/bin/bash
+###########################################################
+# Script de configuracion de la plantilla de las diferentes distros WSL
+# Requiere common.inc en el mismo directorio
+#
+# Uso: wsl_configure_wsl [tipo]
+#
+# Version 2
+# Se simplifica la configuracion para ponerla en un
+# solo script
+#
+# Se debe incluir en el script wsl_env.cmd 
+#    la inforamcion necesaria:
+# USER = Usuario corporativo
+# PWD  = password del usuario corporativo
+# GROUP = grupo del usuario corporativo
+#
+# La ruta a los archivos windows se pasa por parametro
+#
+###########################################################
+preload_err() {
+  RED='\033[0;31m'
+  NC='\033[0m' 
+  echo -e "${RED}FALTA EL SCRIPT $* ${NC}"        
+}
+trap "exit 1" TERM
+export PIDP=$$
+
+# Prepara cosas
+source /mnt/s/wsl_tools/wsl_common.sh
+if [ $? -ne 0 ] ; then preload_err wsl_common.sh && exit 127 ; fi
+    
+cat /mnt/s/wsl_tools/win/wsl_env.cmd | sed s/SET/export/g | sed s/REM/#/g > /mnt/s/wsl_tools/wsl_env.sh
+if [ $? -ne 0 ] ; then preload_err wsl_env.cmd && exit 127 ; fi
+    
+source /mnt/s/wsl_tools/wsl_env.sh
+if [ $? -ne 0 ] ; then preload_err wsl_common.sh && exit 127 ; fi
+
+export ROOT=${WSL_MACHINES_WSL:3}    
+
+# source ${BASE}/wsl_base_dialog.inc
+
+make_fs() {
+  rm -f /mnt/m
+  rm -f /mnt/s  
+  ln -s /mnt/c/${ROOT}/shared  /mnt/s
+  ln -s /mnt/c/${ROOT}/${WSL_DISTRO_NAME} /mnt/m
+}
+make_wsl() {
+   info Configurando WSL y red
+
+   # MYSELF viene de base    
+   # Si existe wsl.conf y tiene usuario cogemos ese
+   
+   if [ -f "/etc/wsl.conf" ] ; then 
+      usuario=`cat /etc/wsl.conf | grep default`
+      MYSELF2=`echo $usuario | cut -f2 -d=`
+   fi
+   
+   if [ -n "$MYSELF" ] ; then
+       USER=$MYSELF
+   else
+       USER=$MYSELF2
+   fi
+   
+   cp  -f /mnt/s/wsl_tools/dat/wsl.conf   /etc/wsl.conf
+   sed -i "s/HOSTNAME/$WSL_DISTRO_NAME/g" /etc/wsl.conf
+   
+   echo "default=$USER" >> /etc/wsl.conf 
+   
+   
+   grep -q $WSL_DISTRO_NAME /etc/hosts
+   if [ $? -ne 0 ] ; then
+       echo "127.0.0.1      $WSL_DISTRO_NAME"  >> /etc/hosts
+   fi    
+}
+
+info Iniciando configuracion
+make_fs
+make_wsl
+create_log_file $0
+
+next="/mnt/s/wsl_tools/wsl_install_${1}.sh"
+[ -f $next ] && eval ". $next"
+
+info Proceso realizado
+

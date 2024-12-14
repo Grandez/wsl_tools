@@ -23,15 +23,16 @@ preload_err() {
 }                                                                                                                                                         
 trap "exit 1" TERM                                                                                                                                        
 export PIDP=$$                                                                                                                                            
-                                                                                                                                                          
+
+SHR=/mnt/s/wsl_tools                                                                                                                                                          
 # Prepara cosas                                                                                                                                           
-source /mnt/c/windows/temp/wsl_common.sh                                                                                                                  
+source ${SHR}/wsl_common.sh                                                                                                                  
 if [ $? -ne 0 ] ; then preload_err wsl_common.sh && exit 127 ; fi                                                                                         
                                                                                                                                                           
-cat /mnt/c/windows/temp/wsl_env.cmd | sed s/SET/export/g | sed s/REM/#/g > /mnt/c/windows/temp/wsl_env.sh                                                 
+cat ${SHR}/win/wsl_env.cmd | sed s/SET/export/g | sed s/REM/#/g > ${SHR}/wsl_env.sh
 if [ $? -ne 0 ] ; then preload_err wsl_env.cmd && exit 127 ; fi                                                                                           
-                                                                                                                                                          
-source /mnt/c/windows/temp/wsl_env.sh                                                                                                                     
+dos2unix ${SHR}/wsl_env.sh > /dev/null 2> /dev/null
+source ${SHR}/wsl_env.sh                                                                                                                     
 if [ $? -ne 0 ] ; then preload_err wsl_common.sh && exit 127 ; fi                                                                                         
                                                                                                                                                           
 export ROOT=${WSL_MACHINES_WSL:3}                                                                                                                         
@@ -40,21 +41,9 @@ export ROOT=${WSL_MACHINES_WSL:3}
                                                                                                                                                           
 make_fs() {
   rm -f /mnt/m
-  rm -f /mnt/s
-  ln -s /mnt/c/${ROOT}/shared  /mnt/s
   ln -s /mnt/c/${ROOT}/${WSL_DISTRO_NAME} /mnt/m
 }
-make_users() {                                                                                                                                            
-   info Configurando usuarios                                                                                                                             
-                                                                                                                                                          
-   MYSELF=`id -u 1000 -n`                                                                                                                                 
-   cat /mnt/s/wsl_tools/dat/profile.conf >> /home/${MYSELF}/.profile                                                                                      
-                                                                                                                                                          
-   echo "export DISPLAY=$(grep -m 1 nameserver /etc/resolv.conf | awk '{print $2}'):0" >> /home/${MYSELF}/.bashrc
-   echo "export LIBGL_ALWAYS_INDIRECT=1"                                               >> /home/${MYSELF}/.bashrc
-   touch /home/${MYSELF}/.hushlogin 
 
-}                                                                                                                                                         
 make_wsl() {                                                                                                                                              
    info Configurando WSL y red
    
@@ -69,35 +58,6 @@ make_wsl() {
        echo "127.0.0.1      $WSL_DISTRO_NAME"  >> /etc/hosts                                                                                              
    fi                                                                                                                                                     
 }                                                                                                                                                         
-descarga_paquetes() {                                                                                                                                     
-   info Descargando paquetes basicos                                                                                                                      
-   
-   apt-get -qq update >> $LOG  2>> $LOG
-   apt     -qq update >> $LOG  2>> $LOG
-   
-   wget -qO- https://cloud.r-project.org/bin/linux/ubuntu/marutter_pubkey.asc | sudo tee -a /etc/apt/trusted.gpg.d/cran_ubuntu_key.asc    >> $LOG 2>> $LOG
-   add-apt-repository -y "deb https://cloud.r-project.org/bin/linux/ubuntu $(lsb_release -cs)-cran40/"  >> $LOG 2>> $LOG                                  
-                                                                                                                                                          
-   # No poner todos los paquetes con \ (lo de la barra ya se sabe)
-   apt-get -qq install -y net-tools                     >> $LOG 2>> $LOG
-   apt-get -qq install -y x11-apps                      >> $LOG 2>> $LOG
-   apt-get -qq install -y mesa-utils                    >> $LOG 2>> $LOG
-   apt-get -qq install -y gedit                         >> $LOG 2>> $LOG
-   apt-get -qq install -y curl                          >> $LOG 2>> $LOG
-   apt-get -qq install -y ca-certificates               >> $LOG 2>> $LOG
-   apt-get -qq install -y libcurl4-openssl-dev          >> $LOG 2>> $LOG
-   apt-get -qq install -y software-properties-common    >> $LOG 2>> $LOG
-   apt-get -qq install -y dialog                        >> $LOG 2>> $LOG
-                                                                                                                                                          
-   apt    -qq install -y r-base                         >> $LOG 2>> $LOG
-   apt    -qq install -y r-base-dev                     >> $LOG 2>> $LOG
-   apt    -qq install -y apt-transport-https            >> $LOG 2>> $LOG
-   apt    -qq install -y neofetch                       >> $LOG 2>> $LOG
-                                                                                                                                                          
-                                                                                                                                                          
-   info Instalando ecosistema R                                                                                                                           
-   R -e 'install.packages(c("xml2", "RestRserve"), dependencies=TRUE)'    >> $LOG 2>> $LOG
-}                                                                                                                                                         
 
 test `id -u` -gt 0 && noroot
 
@@ -107,8 +67,6 @@ info Iniciando configuracion
 make_fs           
 create_log_file $0
 make_wsl                                                                                                                                                  
-# descarga_paquetes                                                                                                                                         
-
 
 info Proceso realizado                                                                                                                                    
                                                                                                                                                           

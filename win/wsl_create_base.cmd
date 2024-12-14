@@ -19,8 +19,7 @@ IF %ERRORLEVEL% NEQ 0 (
 )   
 CALL %DIR%\wsl_common_win
 
-:: NO SE HACE CONTROL DE ERRORES
-:: YA FALLARA POR ALGUN OTRO SITIO
+:: NO SE HACE CONTROL DE ERRORES, YA FALLARA POR ALGUN OTRO SITIO
 
 :GETOPTS
    IF /I "%~1"== "-H"      GOTO HELP
@@ -35,10 +34,6 @@ CALL %DIR%\wsl_common_win
 REM Actualizamos WSL  
 CALL :PROGRESS Actualizando WSL
 WSL --update > \\.\NUL 2> \\.\NUL
-
-REM Descargamos la distro de Store (lo del unregister se lo pasa por el forro)
-CALL :PROGRESS Obteniendo distro del Store
-WSL --unregister %WSL_SRC% > \\.\NUL 2> \\.\NUL
 
 CALL :INFO     Cuando se le pregunte introduzca su usuario y password
 CALL :INFO     Cuando se inicie el shell teclee: %NC%%BOLD%sudo passwd%NC%
@@ -59,18 +54,15 @@ echo SET WSL_DISTRO_NAME=%WSL_TGT% >> c:\windows\Temp\wsl_env.sh
 IF %ERRORLEVEL% NEQ 0 CALL :ERR 1 No se han podido preparar los scripts de ejecucion
 if %RC%         NEQ 0 GOTO :END
 
-REM Llamamos al script generico de crear maquinas
+REM Llamamos al script generico de crear maquinas que controla la maquina base
 
 SET MODO=--clean
 IF %FORCE% EQU 0 SET MODO=--keep
-CALL %DIR%\wsl_create_wsl  --from %WSL_SRC% --name %WSL_TGT% %MODO% %MODO%
+CALL %DIR%\wsl_create_wsl  --from %WSL_SRC% --name %WSL_TGT% %MODO% 
 IF %ERRORLEVEL% NEQ 0 EXIT /B %ERRORLEVEL%
 
-:: REM Ejecutamos el script en la distro usando el profile root
-:: CALL :PROGRESS Configurando %WSL_TGT%
-:: echo WSL -d %WSL_TGT% -- /mnt/c/windows/temp/wsl_configure_base
-:: WSL -d %WSL_TGT% -- /mnt/c/windows/temp/wsl_configure_base
-:: IF %ERRORLEVEL% NEQ 0 CALL :ERR 1 No se ha ejecutado correctamente la fase de configuracion. Chequee wsl_configure_base.log
+WSL --unregister %WSL_SRC% > \\.\NUL 2> \\.\NUL
+
 
 CALL :PROGRESS Proceso realizado
 CALL :INFO Se recomienda reiniciar WSL (wsl --shutdown)

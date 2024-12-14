@@ -30,8 +30,7 @@ IF %ERRORLEVEL% NEQ 0 (
    exit /b 16
 )   
 
-:: NO SE HACE CONTROL DE ERRORES
-:: YA FALLARA POR ALGUN OTRO SITIO
+:: NO SE HACE CONTROL DE ERRORES, YA FALLARA POR ALGUN OTRO SITIO
 
 :GETOPTS
    IF /I  "%~1" == "-H"       GOTO HELP
@@ -62,7 +61,7 @@ if %RC%         NEQ 0 GOTO :END
 
 CALL :PROGRESS Generando distro: %BOLD%%WSL_TGT%%NC%
 MD   %WSL_MACHINES_DRIVE%\%WSL_TGT% & :: > \\.\NUL 2> \\.\NUL
-WSL --import %WSL_TGT% %WSL_MACHINES_DRIVE%\%WSL_TGT% %TMP%\wsl.tar > \\.\NUL 2> \\.\NUL
+WSL --import %WSL_TGT% %WSL_MACHINES_DRIVE%\%WSL_TGT% %TMP%\wsl.tar --version 2 > \\.\NUL 2> \\.\NUL
 IF %ERRORLEVEL% NEQ 0 CALL :ERR 1 No se ha podido importar la maquina %WSL_TGT%
 if %RC%         NEQ 0 GOTO :END
 

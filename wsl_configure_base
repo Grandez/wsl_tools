@@ -54,7 +54,7 @@ make_users() {
                                                                                                                                                           
    touch /home/${MYSELF}/.hushlogin
    
-   groupadd -g 3000 $WSL_GROUP                                                                                                                            
+   groupadd -g 3000 $WSL_GROUP >> $LOG 2>> $LOG
    adduser --gecos "" --uid 2000 --gid 3000 --disabled-password $USER >> $LOG 2>> $LOG
    chpasswd <<<"$USER:$PWD"                                                                                     
 #   useradd -u 2000 -p $PWD -G $WSL_GROUP -d /home/$WSL_USER $WSL_USER
@@ -91,8 +91,8 @@ descarga_paquetes() {
    apt    -qq install -y neofetch                       >> $LOG 2>> $LOG
                                                                                                                                                           
                                                                                                                                                           
-   info Instalando ecosistema R                                                                                                                           
-   R -e 'install.packages(c("xml2", "RestRserve"), dependencies=TRUE)'    >> $LOG 2>> $LOG                                                                
+  info Instalando ecosistema R                                                                                                                           
+  R -e 'install.packages(c("xml2", "RestRserve"), dependencies=TRUE)'    >> $LOG 2>> $LOG                                                                
 }                                                                                                                                                         
 make_wsl_base() {                                                                                                                                              
    info Configurando WSL y red

@@ -96,6 +96,25 @@ descarga_paquetes() {
    info Instalando ecosistema R                                                                                                                           
    R -e 'install.packages(c("xml2", "RestRserve"), dependencies=TRUE)'    >> $LOG 2>> $LOG                                                                
 }                                                                                                                                                         
+make_wsl_base() {                                                                                                                                              
+   info Configurando WSL y red
+   
+   MYSELF=`ls /home`                                                                                                                                 
+
+   cp  -f /mnt/s/wsl_tools/dat/wsl.conf   /etc/wsl.conf                                                                                                   
+   sed -i "s/HOSTNAME/$WSL_DISTRO_NAME/g" /etc/wsl.conf                                                                                                   
+   sed -i "s/USER/$MYSELF/g"              /etc/wsl.conf                                                                                                   
+
+   grep -q $WSL_DISTRO_NAME /etc/hosts                                                                                                                    
+   if [ $? -ne 0 ] ; then 
+       echo Creando host $WSL_DISTRO_NAME
+   else 
+       echo Ya EXISTE EL HOST $WSL_DISTRO_NAME
+   fi        
+                                                                                                                                                          
+   grep -q $WSL_DISTRO_NAME /etc/hosts                                                                                                                    
+   [ $? -ne 0 ] && echo "127.0.0.1      $WSL_DISTRO_NAME"  >> /etc/hosts
+}                                                                                                                                                         
                                                                                                                             
 test `id -u` -gt 0 && noroot                                                                                                                              
                                                                                                                                                           
@@ -105,6 +124,8 @@ info Iniciando configuracion
 make_fs
 create_log_file $0
 descarga_paquetes
+make_wsl_base    # Antes de crear usuarios
 make_users                                                                                                                                                
+
 info Proceso realizado                                                                                                                                    
                                                                                                                                                           

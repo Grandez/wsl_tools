@@ -29,7 +29,11 @@ if [ $? -ne 0 ] ; then
     touch /mnt/m/conf/nginx_${WSL_DISTRO_NAME}.conf
 fi
 
-ln -s /etc/nginx/sites-available/${WSL_DISTRO_NAME}  /mnt/m/conf/nginx_${WSL_DISTRO_NAME}.conf
-rm  -f /etc/nginx/sites-enabled/default > /dev/null 2> /dev/null
-ln -s /etc/nginx/sites-enabled/${WSL_DISTRO_NAME}  /etc/nginx/sites-available/${WSL_DISTRO_NAME}
+mkdir /mnt/m/www
+cp /mnt/s/wsl_tools/dat/index.html /mnt/m/www
+sed -i "s/_DISTRO_NAME_/$WSL_DISTRO_NAME/g" /mnt/m/www/index.html
+
+ln -s /mnt/m/conf/nginx_${WSL_DISTRO_NAME}.conf /etc/nginx/sites-available/${WSL_DISTRO_NAME}
+rm -f /etc/nginx/sites-enabled/default > /dev/null 2> /dev/null
+ln -s /etc/nginx/sites-available/${WSL_DISTRO_NAME} /etc/nginx/sites-enabled/${WSL_DISTRO_NAME}  
 

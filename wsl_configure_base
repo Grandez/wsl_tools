@@ -29,7 +29,8 @@ export PIDP=$$
 source /mnt/c/windows/temp/wsl_common.sh                                                                                                                  
 [ $? -ne 0 ] && preload_err wsl_common.sh && exit 127 
                                                                                                                                                           
-cat /mnt/c/windows/temp/wsl_env.cmd | sed s/SET/export/g | sed s/REM/#/g > /mnt/c/windows/temp/wsl_env.sh                                                 
+cat /mnt/c/windows/temp/wsl_env.cmd | sed s/SET/export/g | sed s/REM/#/g > /mnt/c/windows/temp/wsl_env.sh
+sed -i "s/\r//g" /mnt/c/windows/temp/wsl_env.sh
 [ $? -ne 0 ] && preload_err wsl_common.sh && exit 127 
                                                                                                                                                           
 source /mnt/c/windows/temp/wsl_env.sh                                                                                                                     
@@ -88,6 +89,7 @@ descarga_paquetes() {
    apt    -qq install -y r-base                         >> $LOG 2>> $LOG
    apt    -qq install -y r-base-dev                     >> $LOG 2>> $LOG
    apt    -qq install -y apt-transport-https            >> $LOG 2>> $LOG
+   apt    -qq install -y dos2unix                       >> $LOG 2>> $LOG
    apt    -qq install -y neofetch                       >> $LOG 2>> $LOG
                                                                                                                                                           
                                                                                                                                                           

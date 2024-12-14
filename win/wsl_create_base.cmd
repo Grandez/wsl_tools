@@ -4,7 +4,7 @@
 :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
 @ECHO OFF
-
+echo ejecutando wsl_create_base
 SET WSL_SRC=Ubuntu-24.04
 SET WSL_TGT=base
 SET FORCE=1
@@ -51,25 +51,26 @@ IF %ERRORLEVEL% NEQ 0 (
    exit /b 32
 )   
 
-REM Llamamos al script generico de crear maquinas
-
-SET MODO=--clean
-IF %FORCE% EQU 0 SET MODO=--keep
-CALL %DIR%\wsl_create_wsl  --from %WSL_SRC% --name %WSL_TGT% %MODO%
-IF %ERRORLEVEL% NEQ 0 EXIT /B %ERRORLEVEL%
-
 REM Copiamos los scripts a TEMP de windows (ese no falla)
-COPY /Y /V %WSL_MACHINES_DRIVE%\shared\wsl_tools\wsl*               c:\windows\Temp > \\.\NUL 2> \\.\NUL
-COPY /Y /V %WSL_MACHINES_DRIVE%\shared\wsl_tools\win\wsl_env.cmd    c:\windows\Temp > \\.\NUL 2> \\.\NUL
+COPY /Y /V /B %WSL_MACHINES_DRIVE%\shared\wsl_tools\wsl*               c:\windows\Temp > \\.\NUL 2> \\.\NUL
+COPY /Y /V /B %WSL_MACHINES_DRIVE%\shared\wsl_tools\win\wsl_env.cmd    c:\windows\Temp > \\.\NUL 2> \\.\NUL
 echo SET WSL_DISTRO_NAME=%WSL_TGT% >> c:\windows\Temp\wsl_env.sh
 
 IF %ERRORLEVEL% NEQ 0 CALL :ERR 1 No se han podido preparar los scripts de ejecucion
 if %RC%         NEQ 0 GOTO :END
 
-REM Ejecutamos el script en la distro usando el profile root
-CALL :PROGRESS Configurando %WSL_TGT%
-WSL -d %WSL_TGT% -- /mnt/c/windows/temp/wsl_configure_base
-IF %ERRORLEVEL% NEQ 0 CALL :ERR 1 No se ha ejecutado correctamente la fase de configuracion. Chequee wsl_configure_base.log
+REM Llamamos al script generico de crear maquinas
+
+SET MODO=--clean
+IF %FORCE% EQU 0 SET MODO=--keep
+CALL %DIR%\wsl_create_wsl  --from %WSL_SRC% --name %WSL_TGT% %MODO% %MODO%
+IF %ERRORLEVEL% NEQ 0 EXIT /B %ERRORLEVEL%
+
+:: REM Ejecutamos el script en la distro usando el profile root
+:: CALL :PROGRESS Configurando %WSL_TGT%
+:: echo WSL -d %WSL_TGT% -- /mnt/c/windows/temp/wsl_configure_base
+:: WSL -d %WSL_TGT% -- /mnt/c/windows/temp/wsl_configure_base
+:: IF %ERRORLEVEL% NEQ 0 CALL :ERR 1 No se ha ejecutado correctamente la fase de configuracion. Chequee wsl_configure_base.log
 
 CALL :PROGRESS Proceso realizado
 CALL :INFO Se recomienda reiniciar WSL (wsl --shutdown)

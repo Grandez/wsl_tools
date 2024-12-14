@@ -11,7 +11,7 @@ REM VARIABLES A CONFIGURAR
 REM Variables de configuracion para WSL
 REM ATENCION A LA DIFERENCIA ENTRE WSL_MACHINES_WIN Y WSL_MACHINES_WSL
 
-SET MACHINES_DRIVE=W:
+SET MACHINES_DRIVE=T:
 SET MACHINES_WIN=C:\Maquinas
 SET MACHINES_WSL=C:/Maquinas
 SET USER=kvothe
@@ -33,9 +33,6 @@ CD %CWD% > \\.\NUL 2> \\.\NUL
 
 EXIT /B %RC%
 
-:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
 :: Chequea los programas necesarios
 :: WSL, git, etc
@@ -64,8 +61,7 @@ EXIT /B %RC%
    IF NOT EXIST %MACHINES_WIN% MKDIR %MACHINES_WIN%
    IF NOT EXIST %MACHINES_WIN% (
       CALL :ERR No se ha podido crear el directorio %MACHINES_WIN%
-      SET RC=32
-      GOTO :EOF                     
+      SET RC=32                     
    )
    
    VOL %MACHINES_DRIVE% > \\.\NUL 2> \\.\NUL
@@ -73,7 +69,11 @@ EXIT /B %RC%
       CALL :INFO No existe el disco virtual %MACHINES_DRIVE%
       CALL :INFO Creando disco virtual con %BOLD%SUBST%NC%
       SUBST %MACHINES_DRIVE% %MACHINES_WIN%
-      VOL %MACHINES_DRIVE% > \\.\NUL 2> \\.\NUL
+      VOL %MACHINES_DRIVE% 
+      IF %ERRORLEVEL% NEQ 0 (
+         CALL :ERR No se ha podido crear el disco virtual %MACHINES_DRIVE%
+         SET RC=32
+      )
    )   
 
    :: Variable de entorno para el disco virtual
@@ -97,9 +97,10 @@ EXIT /B %RC%
 
    :: Obtenemos los scripts
    SET METHOD=pull
-   CD shared > \\.\NUL 2> \\.\NUL
+   CD wsl_tools
    IF %ERRORLEVEL% NEQ 0 (
       SET METHOD=clone
+      CD ..
    )   
 
    git %METHOD% https://github.com/Grandez/wsl_tools.git > \\.\NUL 2> \\.\NUL

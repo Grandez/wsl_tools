@@ -59,8 +59,7 @@ make_wsl() {
    info Configurando WSL y red
    
    MYSELF=`id -u 1000 -n`                                                                                                                                 
-echo MYSELF es $MYSELF
-cat  /mnt/s/wsl_tools/dat/wsl.conf                                                                            
+
    cp  -f /mnt/s/wsl_tools/dat/wsl.conf   /etc/wsl.conf                                                                                                   
    sed -i "s/HOSTNAME/$WSL_DISTRO_NAME/g" /etc/wsl.conf                                                                                                   
    sed -i "s/USER/$MYSELF/g"              /etc/wsl.conf                                                                                                   

@@ -44,8 +44,8 @@ IF %ERRORLEVEL% NEQ 0 (
    SHIFT
    IF NOT "%1" == "" goto GETOPTS
 
-SET WSL_SRC=%WSL_SRC: =%     
-SET WSL_TGT=%WSL_TGT: =%     
+SET WSL_SRC=%WSL_SRC: =%
+SET WSL_TGT=%WSL_TGT: =%
 
 IF "%WSL_TGT%" == "" (
    ECHO %ERR%No se ha indicado el nombre de la maquina%NC%
@@ -55,12 +55,12 @@ IF "%WSL_TGT%" == "" (
 WSL --unregister %WSL_TGT% > \\.\NUL 2> \\.\NUL
 IF %FORCE% EQU 1 RD /S /Q %WSL_MACHINES_DRIVE%\%WSL_TGT% > \\.\NUL 2> \\.\NUL
 
-CALL :PROGRESS Exportando distro: %WSL_SRC%
+CALL :PROGRESS Exportando distro: %BOLD%%WSL_SRC%%NC%
 WSL --export %WSL_SRC% %TMP%/wsl.tar > \\.\NUL 2> \\.\NUL
 IF %ERRORLEVEL% NEQ 0 CALL :ERR 1 No se ha podido exportar la maquina %WSL_SRC% (Existe?)
 if %RC%         NEQ 0 GOTO :END
 
-CALL :PROGRESS Generando distro: %WSL_TGT%
+CALL :PROGRESS Generando distro: %BOLD%%WSL_TGT%%NC%
 MD   %WSL_MACHINES_DRIVE%\%WSL_TGT% & :: > \\.\NUL 2> \\.\NUL
 WSL --import %WSL_TGT% %WSL_MACHINES_DRIVE%\%WSL_TGT% %TMP%\wsl.tar > \\.\NUL 2> \\.\NUL
 IF %ERRORLEVEL% NEQ 0 CALL :ERR 1 No se ha podido importar la maquina %WSL_TGT%
@@ -71,7 +71,10 @@ DEL /S /Q /F %TMP%\wsl.tar > \\.\NUL 2> \\.\NUL
 
 REM Ejecutamos el script en la distro usando el profile root
 CALL :PROGRESS Configurando %WSL_TGT%
-WSL -d %WSL_TGT% -u root -- /mnt/s/wsl_tools/wsl_configure_wsl %WSL_TYP%
+SET SCRIPT=/mnt/s/wsl_tools/wsl_configure_wsl
+IF /I "%WSL_TGT%" == "base" SET SCRIPT=/mnt/c/windows/temp/wsl_configure_base
+
+WSL -d %WSL_TGT% -u root -- %SCRIPT% %WSL_TYP%
 IF %ERRORLEVEL% NEQ 0 CALL :ERR 1 No se ha ejecutado correctamente la fase de configuracion. Chequee wsl_configure_wsl.log
 
 exit /b 0

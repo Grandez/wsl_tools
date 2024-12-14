@@ -52,8 +52,6 @@ make_users() {
    MYSELF=`id -u 1000 -n`                                                                                                                                 
    cat /mnt/s/wsl_tools/dat/profile.conf >> /home/${MYSELF}/.profile                                                                                      
                                                                                                                                                           
-   echo "export DISPLAY=$(grep -m 1 nameserver /etc/resolv.conf | awk '{print $2}'):0" >> /home/${MYSELF}/.bashrc
-   echo "export LIBGL_ALWAYS_INDIRECT=1"                                               >> /home/${MYSELF}/.bashrc
    touch /home/${MYSELF}/.hushlogin
    
    groupadd -g 3000 $WSL_GROUP                                                                                                                            

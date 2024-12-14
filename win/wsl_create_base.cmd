@@ -12,7 +12,6 @@ SET FORCE=1
 SET mypath=%~dp0
 SET DIR=%mypath:~0,-1%
 
-
 CALL %DIR%\wsl_env
 IF %ERRORLEVEL% NEQ 0 (
    ECHO Falta el script de variables de entorno wsl_env
@@ -60,23 +59,20 @@ CALL %DIR%\wsl_create_wsl  --from %WSL_SRC% --name %WSL_TGT% %MODO%
 IF %ERRORLEVEL% NEQ 0 EXIT /B %ERRORLEVEL%
 
 REM Copiamos los scripts a TEMP de windows (ese no falla)
-COPY /Y /V %WSL_MACHINES_DRIVE%\shared\wsl_tools\wsl*            c:\windows\Temp > \\.\NUL 2> \\.\NUL
-COPY /Y /V %WSL_MACHINES_DRIVE%\shared\wsl_tools\win\wsl_env.cmd c:\windows\Temp > \\.\NUL 2> \\.\NUL
+COPY /Y /V %WSL_MACHINES_DRIVE%\shared\wsl_tools\wsl*               c:\windows\Temp > \\.\NUL 2> \\.\NUL
+COPY /Y /V %WSL_MACHINES_DRIVE%\shared\wsl_tools\win\wsl_env.cmd    c:\windows\Temp > \\.\NUL 2> \\.\NUL
 echo SET WSL_DISTRO_NAME=%WSL_TGT% >> c:\windows\Temp\wsl_env.sh
 
 IF %ERRORLEVEL% NEQ 0 CALL :ERR 1 No se han podido preparar los scripts de ejecucion
 if %RC%         NEQ 0 GOTO :END
-
 
 REM Ejecutamos el script en la distro usando el profile root
 CALL :PROGRESS Configurando %WSL_TGT%
 WSL -d %WSL_TGT% -- /mnt/c/windows/temp/wsl_configure_base
 IF %ERRORLEVEL% NEQ 0 CALL :ERR 1 No se ha ejecutado correctamente la fase de configuracion. Chequee wsl_configure_base.log
 
-:: CALL :INFO     Acceda a la distro con el comando %NC%%BOLD%wsl -d %WSL_TGT%%NC%
-:: CALL :INFO     Ejecute %NC%%BOLD%/mnt/c/windows/temp/wsl_base_configure%NC%
 CALL :PROGRESS Proceso realizado
-CALL :PROGRESS Se recomienda reiniciar WSL (wsl --shutdown)
+CALL :INFO Se recomienda reiniciar WSL (wsl --shutdown)
 
 SET RC=%ERRORLEVEL%
 exit /b RC

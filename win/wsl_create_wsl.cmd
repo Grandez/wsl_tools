@@ -89,11 +89,12 @@ exit /b 0
 
 :HELP
    ECHO Crea una distro a partir de una existente
-   ECHO %0 [--from distro_base] [--name distro_nueva] [ --clean | --keep ]
-   ECHO    %BOLD%--from distro_base%NC% - Nombre de la distro WSL a usar como plantilla. Por defecto %BOLD%base%NC%
+   ECHO %0 --name distro_nueva [--from distro_base] [--clean] [--keep]
+   ECHO    %BOLD%--from distro_base%NC%  - Nombre de la distro WSL a usar como plantilla. Por defecto %BOLD%base%NC%
    ECHO    %BOLD%--name distro_nueva%NC% - Nombre de la distro nueva
-   ECHO    %BOLD%--TYPE TIPO%NC% - Indica el tipo de distro a crear
-   ECHO    %BOLD%clean | keep%NC% - si keep y la maquina existia se mantiene la configuracion
+   ECHO    %BOLD%--type TIPO%NC% - Indica el tipo de distro a crear
+   ECHO    %BOLD%--clean%NC% - Si la distro existe se borra toda la informacion (%BOLD%defecto%NC%)
+   ECHO    %BOLD%--keep%NC%  - Si la distro existe se mantiene la confifuracion 
    GOTO END
    
 :END 

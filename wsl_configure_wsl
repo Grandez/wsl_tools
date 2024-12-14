@@ -1,87 +1,115 @@
-#!/bin/bash
-###########################################################
-# Script de configuracion de la plantilla de las diferentes distros WSL
-# Requiere common.inc en el mismo directorio
-#
-# Uso: wsl_configure_wsl [tipo]
-#
-# Version 2
-# Se simplifica la configuracion para ponerla en un
-# solo script
-#
-# Se debe incluir en el script wsl_env.cmd 
-#    la inforamcion necesaria:
-# USER = Usuario corporativo
-# PWD  = password del usuario corporativo
-# GROUP = grupo del usuario corporativo
-#
-# La ruta a los archivos windows se pasa por parametro
-#
-###########################################################
-preload_err() {
-  RED='\033[0;31m'
-  NC='\033[0m' 
-  echo -e "${RED}FALTA EL SCRIPT $* ${NC}"        
-}
-trap "exit 1" TERM
-export PIDP=$$
-
-# Prepara cosas
-source /mnt/s/wsl_tools/wsl_common.sh
-if [ $? -ne 0 ] ; then preload_err wsl_common.sh && exit 127 ; fi
-    
-cat /mnt/s/wsl_tools/win/wsl_env.cmd | sed s/SET/export/g | sed s/REM/#/g > /mnt/s/wsl_tools/wsl_env.sh
-if [ $? -ne 0 ] ; then preload_err wsl_env.cmd && exit 127 ; fi
-    
-source /mnt/s/wsl_tools/wsl_env.sh
-if [ $? -ne 0 ] ; then preload_err wsl_common.sh && exit 127 ; fi
-
-export ROOT=${WSL_MACHINES_WSL:3}    
-
-# source ${BASE}/wsl_base_dialog.inc
-
+#!/bin/bash                                                                                                                                               
+###########################################################                                                                                               
+# Script de configuracion de la plantilla de las diferentes distros WSL                                                                                   
+# Requiere common.inc en el mismo directorio                                                                                                              
+#                                                                                                                                                         
+# Version 2                                                                                                                                               
+# Se simplifica la configuracion para ponerla en un                                                                                                       
+# solo script                                                                                                                                             
+#                                                                                                                                                         
+# Se debe incluir en el script wsl_env.cmd                                                                                                                
+#    la inforamcion necearia:                                                                                                                             
+# USER = Usuario corporativo                                                                                                                              
+# PWD  = password del usuario corporativo                                                                                                                 
+# GROUP = grupo del usuario corporativo                                                                                                                   
+#                                                                                                                                                         
+# La ruta a los archivos windows se pasa por parametro                                                                                                    
+#                                                                                                                                                         
+###########################################################                                                                                               
+preload_err() {                                                                                                                                           
+  RED='\033[0;31m'                                                                                                                                        
+  NC='\033[0m'                                                                                                                                            
+  echo -e "${RED}FALTA EL SCRIPT $* ${NC}"                                                                                                                
+}                                                                                                                                                         
+trap "exit 1" TERM                                                                                                                                        
+export PIDP=$$                                                                                                                                            
+                                                                                                                                                          
+# Prepara cosas                                                                                                                                           
+source /mnt/c/windows/temp/wsl_common.sh                                                                                                                  
+if [ $? -ne 0 ] ; then preload_err wsl_common.sh && exit 127 ; fi                                                                                         
+                                                                                                                                                          
+cat /mnt/c/windows/temp/wsl_env.cmd | sed s/SET/export/g | sed s/REM/#/g > /mnt/c/windows/temp/wsl_env.sh                                                 
+if [ $? -ne 0 ] ; then preload_err wsl_env.cmd && exit 127 ; fi                                                                                           
+                                                                                                                                                          
+source /mnt/c/windows/temp/wsl_env.sh                                                                                                                     
+if [ $? -ne 0 ] ; then preload_err wsl_common.sh && exit 127 ; fi                                                                                         
+                                                                                                                                                          
+export ROOT=${WSL_MACHINES_WSL:3}                                                                                                                         
+                                                                                                                                                          
+# source ${BASE}/wsl_base_dialog.inc                                                                                                                      
+                                                                                                                                                          
 make_fs() {
   rm -f /mnt/m
-  rm -f /mnt/s  
+  rm -f /mnt/s
   ln -s /mnt/c/${ROOT}/shared  /mnt/s
   ln -s /mnt/c/${ROOT}/${WSL_DISTRO_NAME} /mnt/m
 }
-make_wsl() {
+make_users() {                                                                                                                                            
+   info Configurando usuarios                                                                                                                             
+                                                                                                                                                          
+   MYSELF=`id -u 1000 -n`                                                                                                                                 
+   cat /mnt/s/wsl_tools/dat/profile.conf >> /home/${MYSELF}/.profile                                                                                      
+                                                                                                                                                          
+   echo "export DISPLAY=$(grep -m 1 nameserver /etc/resolv.conf | awk '{print $2}'):0" >> /home/${MYSELF}/.bashrc
+   echo "export LIBGL_ALWAYS_INDIRECT=1"                                               >> /home/${MYSELF}/.bashrc
+   touch /home/${MYSELF}/.hushlogin 
+
+}                                                                                                                                                         
+make_wsl() {                                                                                                                                              
    info Configurando WSL y red
+   
+   MYSELF=`id -u 1000 -n`                                                                                                                                 
+echo MYSELF es $MYSELF
+cat  /mnt/s/wsl_tools/dat/wsl.conf                                                                            
+   cp  -f /mnt/s/wsl_tools/dat/wsl.conf   /etc/wsl.conf                                                                                                   
+   sed -i "s/HOSTNAME/$WSL_DISTRO_NAME/g" /etc/wsl.conf                                                                                                   
+   sed -i "s/USER/$MYSELF/g"              /etc/wsl.conf                                                                                                   
+                                                                                                                                                          
+   grep -q $WSL_DISTRO_NAME /etc/hosts                                                                                                                    
+   if [ $? -ne 0 ] ; then                                                                                                                                 
+       echo "127.0.0.1      $WSL_DISTRO_NAME"  >> /etc/hosts                                                                                              
+   fi                                                                                                                                                     
+}                                                                                                                                                         
+descarga_paquetes() {                                                                                                                                     
+   info Descargando paquetes basicos                                                                                                                      
+   
+   apt-get -qq update >> $LOG  2>> $LOG
+   apt     -qq update >> $LOG  2>> $LOG
+   
+   wget -qO- https://cloud.r-project.org/bin/linux/ubuntu/marutter_pubkey.asc | sudo tee -a /etc/apt/trusted.gpg.d/cran_ubuntu_key.asc    >> $LOG 2>> $LOG
+   add-apt-repository -y "deb https://cloud.r-project.org/bin/linux/ubuntu $(lsb_release -cs)-cran40/"  >> $LOG 2>> $LOG                                  
+                                                                                                                                                          
+   # No poner todos los paquetes con \ (lo de la barra ya se sabe)
+   apt-get -qq install -y net-tools                     >> $LOG 2>> $LOG
+   apt-get -qq install -y x11-apps                      >> $LOG 2>> $LOG
+   apt-get -qq install -y mesa-utils                    >> $LOG 2>> $LOG
+   apt-get -qq install -y gedit                         >> $LOG 2>> $LOG
+   apt-get -qq install -y curl                          >> $LOG 2>> $LOG
+   apt-get -qq install -y ca-certificates               >> $LOG 2>> $LOG
+   apt-get -qq install -y libcurl4-openssl-dev          >> $LOG 2>> $LOG
+   apt-get -qq install -y software-properties-common    >> $LOG 2>> $LOG
+   apt-get -qq install -y dialog                        >> $LOG 2>> $LOG
+                                                                                                                                                          
+   apt    -qq install -y r-base                         >> $LOG 2>> $LOG
+   apt    -qq install -y r-base-dev                     >> $LOG 2>> $LOG
+   apt    -qq install -y apt-transport-https            >> $LOG 2>> $LOG
+   apt    -qq install -y neofetch                       >> $LOG 2>> $LOG
+                                                                                                                                                          
+                                                                                                                                                          
+   info Instalando ecosistema R                                                                                                                           
+   R -e 'install.packages(c("xml2", "RestRserve"), dependencies=TRUE)'    >> $LOG 2>> $LOG
+}                                                                                                                                                         
 
-   # MYSELF viene de base    
-   # Si existe wsl.conf y tiene usuario cogemos ese
-   
-   if [ -f "/etc/wsl.conf" ] ; then 
-      usuario=`cat /etc/wsl.conf | grep default`
-      MYSELF2=`echo $usuario | cut -f2 -d=`
-   fi
-   
-   if [ -n "$MYSELF" ] ; then
-       USER=$MYSELF
-   else
-       USER=$MYSELF2
-   fi
-   
-   cp  -f /mnt/s/wsl_tools/dat/wsl.conf   /etc/wsl.conf
-   sed -i "s/HOSTNAME/$WSL_DISTRO_NAME/g" /etc/wsl.conf
-   
-   echo "default=$USER" >> /etc/wsl.conf 
-   
-   
-   grep -q $WSL_DISTRO_NAME /etc/hosts
-   if [ $? -ne 0 ] ; then
-       echo "127.0.0.1      $WSL_DISTRO_NAME"  >> /etc/hosts
-   fi    
-}
+test `id -u` -gt 0 && noroot
 
-info Iniciando configuracion
-make_fs
-make_wsl
+# get_config            # Interfaz para informacion de usuario
+
+info Iniciando configuracion                                                                                                                              
+make_fs           
 create_log_file $0
+make_wsl                                                                                                                                                  
+# descarga_paquetes                                                                                                                                         
 
-next="/mnt/s/wsl_tools/wsl_install_${1}.sh"
-[ -f $next ] && eval ". $next"
 
-info Proceso realizado
-
+info Proceso realizado                                                                                                                                    
+                                                                                                                                                          

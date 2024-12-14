@@ -63,6 +63,7 @@ make_users() {
 #   chown ${WSL_USER}:${WSL_USER} /home/${WSL_USER}/.bashrc
 #   chown ${WSL_USER}:${WSL_USER} /home/${WSL_USER}/.profile
     touch /home/${MYSELF}/.hushlogin
+    cat /mnt/s/wsl_tools/dat/zzz_wsl.sh >> /etc/profile.d
 }                                                                                                                                                         
 descarga_paquetes() {                                                                                                                                     
    info Descargando paquetes basicos                                                                                                                      
@@ -103,13 +104,6 @@ make_wsl_base() {
    sed -i "s/HOSTNAME/$WSL_DISTRO_NAME/g" /etc/wsl.conf                                                                                                   
    sed -i "s/USER/$MYSELF/g"              /etc/wsl.conf                                                                                                   
 
-   grep -q $WSL_DISTRO_NAME /etc/hosts                                                                                                                    
-   if [ $? -ne 0 ] ; then 
-       echo Creando host $WSL_DISTRO_NAME
-   else 
-       echo Ya EXISTE EL HOST $WSL_DISTRO_NAME
-   fi        
-                                                                                                                                                          
    grep -q $WSL_DISTRO_NAME /etc/hosts                                                                                                                    
    [ $? -ne 0 ] && echo "127.0.0.1      $WSL_DISTRO_NAME"  >> /etc/hosts
 }                                                                                                                                                         

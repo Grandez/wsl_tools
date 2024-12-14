@@ -22,24 +22,23 @@ noroot () {
    2stderr ${ERR} Este script se debe ejecutar como root ${NC} 
    kill -s TERM $PIDP
 }
- already_run () {
+already_run () {
    2stderr ${ERR} El script $1 parece que ya se ha ejecutado ${NC} 
    kill -s TERM $PIDP
 }
-
 info() {
    echo -e ${INFO}`date +%T` - $@${NC} | tee -a $LOG
 }
-
 info2() {
    echo -e ${WARN}`date +%T` - $@${NC} | tee -a $LOG
 }
-
 err() {
    2stderr ${ERR} $* ${NC} 
    kill -s TERM $PIDP
 }
-
+warn() {
+   echo -e ${WARN}`date +%T` - $@${NC} | tee -a $LOG    
+}
 create_log_file () {
    CMD=${1##*/}
    NAME=${CMD%%.*} 

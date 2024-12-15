@@ -4,11 +4,12 @@
 :: Parametros
 :: --from name  - Maquina base
 :: --name name  - Maquina destino
+:: --type       - Tipo de maquina a crear
 :: --force      - Si se especifica crea una maquina desde cero
 ::                Si no, mantiene configuracion existente 
 :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-@ECHO OFF
+:: @ECHO OFF
 
 SET WSL_SRC=base
 SET WSL_TGT=
@@ -55,15 +56,19 @@ WSL --unregister %WSL_TGT% > \\.\NUL 2> \\.\NUL
 IF %FORCE% EQU 1 RD /S /Q %WSL_MACHINES_DRIVE%\%WSL_TGT% > \\.\NUL 2> \\.\NUL
 
 CALL :PROGRESS Exportando distro: %BOLD%%WSL_SRC%%NC%
-WSL --export %WSL_SRC% %TMP%/wsl.tar > \\.\NUL 2> \\.\NUL
-IF %ERRORLEVEL% NEQ 0 CALL :ERR 1 No se ha podido exportar la maquina %WSL_SRC% (Existe?)
-if %RC%         NEQ 0 GOTO :END
+WSL --terminate %WSL_SRC% > \\.\NUL 2> \\.\NUL
+:: esperamos 5 segundos
+ping -n 6 127.0.0.1 > nul
+WSL --export %WSL_SRC% %TMP%/wsl.tar 
+:: > \\.\NUL 2> \\.\NUL
+IF %ERRORLEVEL% NEQ 0 CALL :ERR No se ha podido exportar la maquina %WSL_SRC% (Existe?)
+IF %RC%         NEQ 0 GOTO :END
 
 CALL :PROGRESS Generando distro: %BOLD%%WSL_TGT%%NC%
 MD   %WSL_MACHINES_DRIVE%\%WSL_TGT% & :: > \\.\NUL 2> \\.\NUL
 WSL --import %WSL_TGT% %WSL_MACHINES_DRIVE%\%WSL_TGT% %TMP%\wsl.tar --version 2 > \\.\NUL 2> \\.\NUL
-IF %ERRORLEVEL% NEQ 0 CALL :ERR 1 No se ha podido importar la maquina %WSL_TGT%
-if %RC%         NEQ 0 GOTO :END
+IF %ERRORLEVEL% NEQ 0 CALL :ERR No se ha podido importar la maquina %WSL_TGT%
+IF %RC%         NEQ 0 GOTO :END
 
 CALL :PROGRESS Limpiando
 DEL /S /Q /F %TMP%\wsl.tar > \\.\NUL 2> \\.\NUL
@@ -72,9 +77,10 @@ REM Ejecutamos el script en la distro usando el profile root
 CALL :PROGRESS Configurando %WSL_TGT%
 SET SCRIPT=/mnt/s/wsl_tools/wsl_configure_wsl
 IF /I "%WSL_TGT%" == "base" SET SCRIPT=/mnt/c/windows/temp/wsl_configure_base
-
+echo WSL -d %WSL_TGT% -u root -- %SCRIPT% %WSL_TYP%
 WSL -d %WSL_TGT% -u root -- %SCRIPT% %WSL_TYP%
-IF %ERRORLEVEL% NEQ 0 CALL :ERR 1 No se ha ejecutado correctamente la fase de configuracion. Chequee wsl_configure_wsl.log
+IF %ERRORLEVEL% NEQ 0 CALL :ERR No se ha ejecutado correctamente la fase de configuracion. Chequee wsl_configure_wsl.log
+IF %RC%         NEQ 0 GOTO :END
 
 exit /b 0
   

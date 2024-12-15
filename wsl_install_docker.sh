@@ -42,6 +42,7 @@ apt-get -qq install -y docker-ce \
 info2 Configurando Docker
 
 mkdir /mnt/s/docker
+mkdir /mnt/s/docker/data
+
 cp -f /mnt/s/wsl_tools/dat/docker.json /etc/docker/daemon.json
 chown root:docker /etc/docker/daemon.json
-sed -i "s/docker_wsl_data/\/mnt\/m\/docker/g" /etc/docker/daemon.json

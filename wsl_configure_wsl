@@ -9,11 +9,6 @@
 #                                                                                                                                                         
 # Se debe incluir en el script wsl_env.cmd                                                                                                                
 #    la inforamcion necearia:                                                                                                                             
-# USER = Usuario corporativo                                                                                                                              
-# PWD  = password del usuario corporativo                                                                                                                 
-# GROUP = grupo del usuario corporativo                                                                                                                   
-#                                                                                                                                                         
-# La ruta a los archivos windows se pasa por parametro                                                                                                    
 #                                                                                                                                                         
 ###########################################################                                                                                               
 preload_err() {                                                                                                                                           
@@ -59,6 +54,15 @@ make_wsl() {
    fi                                                                                                                                                     
 }                                                                                                                                                         
 
+post_installation() {
+   TYPES=$(echo $1 | tr ";" "\n")
+
+   for TYPE in $TYPES ; do
+       scr=/mnt/s/wsl_tools/wsl_install_${TYPE}.sh
+       [[ -f $scr  ]] && $scr
+       [[ $? -gt 0 ]] && err Fallo la instalacion de ${TYPE}
+   done    
+}
 test `id -u` -gt 0 && noroot
 
 # get_config            # Interfaz para informacion de usuario
@@ -67,6 +71,8 @@ info Iniciando configuracion
 make_fs           
 create_log_file $0
 make_wsl                                                                                                                                                  
+
+[[ -n $1 ]] && post_installation $1
 
 info Proceso realizado                                                                                                                                    
                                                                                                                                                           

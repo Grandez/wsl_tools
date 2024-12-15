@@ -12,8 +12,8 @@ REM Variables de configuracion para WSL
 REM ATENCION A LA DIFERENCIA ENTRE WSL_MACHINES_WIN Y WSL_MACHINES_WSL
 
 SET MACHINES_DRIVE=T:
-SET MACHINES_WIN=C:\Maquinas
-SET MACHINES_WSL=C:/Maquinas
+SET MACHINES_WIN=C:\Maquinas2
+SET MACHINES_WSL=C:/Maquinas2
 SET USER=kvothe
 SET PWD=kvothe
 SET GROUP=temerant
@@ -70,10 +70,10 @@ EXIT /B %RC%
       CALL :INFO Creando disco virtual con %BOLD%SUBST%NC%
       SUBST %MACHINES_DRIVE% %MACHINES_WIN%
       VOL %MACHINES_DRIVE% 
-      IF %ERRORLEVEL% NEQ 0 (
-         CALL :ERR No se ha podido crear el disco virtual %MACHINES_DRIVE%
-         SET RC=32
-      )
+::      IF %ERRORLEVEL% NEQ 0 (
+::         CALL :ERR No se ha podido crear el disco virtual %MACHINES_DRIVE%
+::         SET RC=32
+::      )
    )   
 
    :: Variable de entorno para el disco virtual
@@ -98,10 +98,7 @@ EXIT /B %RC%
    :: Obtenemos los scripts
    SET METHOD=pull
    CD wsl_tools
-   IF %ERRORLEVEL% NEQ 0 (
-      SET METHOD=clone
-      CD ..
-   )   
+   IF %ERRORLEVEL% NEQ 0 SET METHOD=clone
 
    git %METHOD% https://github.com/Grandez/wsl_tools.git > \\.\NUL 2> \\.\NUL
    IF %ERRORLEVEL% NEQ 0 (

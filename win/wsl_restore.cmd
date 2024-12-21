@@ -4,12 +4,11 @@
 :: Se asume la estructura definida en wsl_env
 ::
 :: Options:
-::   --label    para poner una etiqueta
-::   --nozip    para no generarlo como gz
-::   --nosuffix para no incluir la firma temporal
+::   --name     La distro a restaurar
+::   --choose   Permite elegir la copia de seguridad
 ::
 :: History 
-::   v2 - Se hace copia de todo: maquina y datos en un unico archivo 
+::   v1 - Pasa del choose, coge la ultima
 ::
 :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 

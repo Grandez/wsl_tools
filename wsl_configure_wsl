@@ -19,17 +19,18 @@ preload_err() {
 trap "exit 1" TERM                                                                                                                                        
 export PIDP=$$                                                                                                                                            
 
+echo entra 1
 SHR=/mnt/s/wsl_tools                                                                                                                                                          
 # Prepara cosas                                                                                                                                           
 source ${SHR}/wsl_common.sh                                                                                                                  
 if [ $? -ne 0 ] ; then preload_err wsl_common.sh && exit 127 ; fi                                                                                         
-                                                                                                                                                          
+echo entra 2                                                                                                                                                          
 cat ${SHR}/win/wsl_env.cmd | sed s/SET/export/g | sed s/REM/#/g > ${SHR}/wsl_env.sh
 if [ $? -ne 0 ] ; then preload_err wsl_env.cmd && exit 127 ; fi                                                                                           
 dos2unix ${SHR}/wsl_env.sh > /dev/null 2> /dev/null
 source ${SHR}/wsl_env.sh                                                                                                                     
 if [ $? -ne 0 ] ; then preload_err wsl_common.sh && exit 127 ; fi                                                                                         
-                                                                                                                                                          
+echo entra 3                                                                                                                                                          
 export ROOT=${WSL_MACHINES_WSL:3}                                                                                                                         
                                                                                                                                                           
 # source ${BASE}/wsl_base_dialog.inc                                                                                                                      

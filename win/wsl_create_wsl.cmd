@@ -9,7 +9,7 @@
 ::                Si no, mantiene configuracion existente 
 :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-:: @ECHO OFF
+@ECHO OFF
 
 SET WSL_SRC=base
 SET WSL_TGT=

@@ -1,0 +1,5 @@
+#!/bin/sh -e
+
+echo EJECUTANDO RC.LOCAL
+
+exit 0

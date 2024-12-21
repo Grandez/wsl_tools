@@ -105,10 +105,6 @@ descarga_paquetes() {
    apt    -qq install -y apt-transport-https            >> $LOG 2>> $LOG
    apt    -qq install -y dos2unix                       >> $LOG 2>> $LOG
    apt    -qq install -y util-linux-extra               >> $LOG 2>> $LOG
-   #Hack
-   apt    -qq install -y dbus                           >> $LOG 2>> $LOG
-   apt    -qq install -y policykit-1                    >> $LOG 2>> $LOG
-   apt    -qq install -y daemonize                      >> $LOG 2>> $LOG
    apt    -qq install -y neofetch                       >> $LOG 2>> $LOG
 
    R --version > /dev/null 2> /dev/null
@@ -132,32 +128,18 @@ make_wsl_base() {
    grep -q $WSL_DISTRO_NAME /etc/hosts                                                                                                                   
    [ $? -ne 0 ] && echo "127.0.0.1      $WSL_DISTRO_NAME"  >> /etc/hosts
 }                                                                                                                                                        
-
-make_hack() {
-   cp  -f /mnt/s/wsl_tools/dat/wsl2hack /usr/local/bin/wsl2hack
-   sed -i s/MYSELF/$MYSELF/g            /usr/local/bin/wsl2hack
-   chmod +x /usr/local/bin/wsl2hack
-   
-   cp  -f /mnt/s/wsl_tools/dat/rc.local /etc
-   chmod +x /etc/rc.local
-}                                                                                                                           
-
+                                                                                                                           
 test `id -u` -gt 0 && noroot                                                                                                                             
                                                                                                                                                          
 # get_config            # Interfaz para informacion de usuario                                                                                           
                                                                                                                                                          
 info Iniciando configuracion
+get_dos2unix
 make_fs
 create_log_file $0
 descarga_paquetes
 make_wsl_base    # Antes de crear usuarios
-# make_users                                                                                                                                               
-make_hack
-
-echo Linea rootwsl:x:0:0:root:/root:/usr/local/bin/wsl2hack
-echo comandos: vipw
-echo comandos: vipw -s
-
+make_users                                                                                                                                               
 
 info Proceso realizado                                                                                                                                   
                                                                                                                                                           

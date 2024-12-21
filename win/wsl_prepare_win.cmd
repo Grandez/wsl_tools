@@ -11,9 +11,9 @@ REM VARIABLES A CONFIGURAR
 REM Variables de configuracion para WSL
 REM ATENCION A LA DIFERENCIA ENTRE WSL_MACHINES_WIN Y WSL_MACHINES_WSL
 
-SET MACHINES_DRIVE=T:
-SET MACHINES_WIN=C:\Maquinas2
-SET MACHINES_WSL=C:/Maquinas2
+SET MACHINES_DRIVE=W:
+SET MACHINES_WIN=C:\Maquinas
+SET MACHINES_WSL=C:/Maquinas
 SET USER=kvothe
 SET PWD=kvothe
 SET GROUP=temerant
@@ -91,7 +91,8 @@ EXIT /B %RC%
    )
    %MACHINES_DRIVE%
    CD %MACHINES_DRIVE%\shared
-   MD logs > \\.\NUL 2> \\.\NUL
+   MD logs    > \\.\NUL 2> \\.\NUL
+   MD backups > \\.\NUL 2> \\.\NUL
 
    CALL :PROGRESS Recuperando scripts
 
@@ -109,15 +110,16 @@ EXIT /B %RC%
 
 :: Guardamos la configuracion actual en wsl_env.cmd
 :: Se sobreescribe si existiera
+:: El prefijo WSL2 es para no chocar con WSL
 :CREATE_CONFIG
    SET ENV=%MACHINES_DRIVE%\shared\wsl_tools\win\wsl_env.cmd
    ECHO. > %ENV%
-   ECHO SET "WSL_MACHINES_DRIVE=%MACHINES_DRIVE%" >> %ENV%
-   ECHO SET "WSL_MACHINES_WIN=%MACHINES_WIN%"     >> %ENV%
-   ECHO SET "WSL_MACHINES_WSL=%MACHINES_WSL%"     >> %ENV%
-   ECHO SET "WSL_USER=%USER%"                     >> %ENV%
-   ECHO SET "WSL_PWD=%PWD%"                       >> %ENV%
-   ECHO SET "WSL_GROUP=%GROUP%"                   >> %ENV%
+   ECHO SET "WSL2_MACHINES_DRIVE=%MACHINES_DRIVE%" >> %ENV%
+   ECHO SET "WSL2_MACHINES_WIN=%MACHINES_WIN%"     >> %ENV%
+   ECHO SET "WSL2_MACHINES_WSL=%MACHINES_WSL%"     >> %ENV%
+   ECHO SET "WSL2_USER=%USER%"                     >> %ENV%
+   ECHO SET "WSL2_PWD=%PWD%"                       >> %ENV%
+   ECHO SET "WSL2_GROUP=%GROUP%"                   >> %ENV%
    GOTO :EOF
    
 :COMMON

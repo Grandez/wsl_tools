@@ -1,7 +1,7 @@
  
-SET "WSL_MACHINES_DRIVE=T:" 
-SET "WSL_MACHINES_WIN=C:\Maquinas2"     
-SET "WSL_MACHINES_WSL=C:/Maquinas2"     
-SET "WSL_USER=kvothe"                     
-SET "WSL_PWD=kvothe"                       
-SET "WSL_GROUP=temerant"                   
+SET "WSL2_MACHINES_DRIVE=W:" 
+SET "WSL2_MACHINES_WIN=C:\Maquinas"     
+SET "WSL2_MACHINES_WSL=C:/Maquinas"     
+SET "WSL2_USER=kvothe"                     
+SET "WSL2_PWD=kvothe"                       
+SET "WSL2_GROUP=temerant"                   

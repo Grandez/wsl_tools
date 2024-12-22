@@ -186,7 +186,7 @@ GOTO :END
   GOTO :EOF
    
 :END 
-   DEL /Y %WRKTMP%\wsl_tmp*
+   DEL /S /Q %WRKTMP%\wsl_tmp* > \\.\NUL 2> \\.\NUL
    %CWD:~0,2%
    CD %CWD%
    EXIT /B %RC%

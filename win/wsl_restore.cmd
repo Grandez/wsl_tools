@@ -16,6 +16,7 @@
 
 SET SRC=
 SET LBL=
+SET BCK=
 SET NOZIP=0
 SET NOSFX=0
 SET CWD=%CD%
@@ -44,6 +45,7 @@ SET BIN=%TOOLS%\pkg
    IF /I "%~1"== "--HELP"     GOTO HELP
    IF /I "%1" == "--name"     SET SRC=%2  & shift
    IF /I "%1" == "--label"    SET LBL=%2  & shift   
+   IF /I "%1" == "--file"     SET BCK=%2  & shift      
    SHIFT
    IF NOT "%1" == "" goto GETOPTS
 
@@ -52,15 +54,38 @@ IF NOT DEFINED SRC (
    EXIT /B 16
 )   
 
-SET SRC=%SRC: =%
+IF DEFINED SRC SET SRC=%SRC: =%
+IF DEFINED LBL SET LBL=%LBL: =%
+IF DEFINED BCK (
+   SET TPL=%BCK: =%
+) ELSE (
+  SET TPL=%SRC%_wsl
+  IF DEFINED LBL SET TPL=%TPL%_%LBL%
+)
 
+:: Guardar los nombres delos backups en un fichero
+DIR /B /OD %SHR%\backups\%TPL%* > %WRKTMP%\wsl_tmp_restore.txt
+IF %ERRORLEVEL% NEQ 0 (
+   CALL :INFO No hay copias de seguridad disponibles para los criterios indicados
+   EXIT /B 4
+)
+
+:: Chequear si hay uno o mas
+%BIN%\wc -l %WRKTMP%\wsl_tmp_restore.txt > %WRKTMP%\wsl_tmp_count.txt
+SET /A COUNTER=0
+FOR /F "tokens=1" %%A IN (%WRKTMP%\wsl_tmp_count.txt) DO SET /A COUNTER=%%A
+
+:: Si hay varios seleccionar
+SET FOUND=0
+IF %COUNTER% EQU 1 FOR /F "tokens=*" %%A IN (%WRKTMP%\wsl_tmp_restore.txt) DO SET BCKFILE=%%A
+IF %COUNTER% GTR 1 CALL :SELECT_ITEM
+
+:: Forzar a parar la distro, ezperando si es necesario
 WSL --terminate %SRC% > \\.\NUL 2> \\.\NUL
 IF %ERRORLEVEL% NEQ 0 (
    CALL :ERR  No existe la distro %SRC%
    EXIT /B 16
 )   
-
-:: Esperar que termine efectivamente 
 
 SET COUNTER=0
 :WAITING
@@ -77,43 +102,55 @@ IF %ERRORLEVEL% NEQ 0 (
    EXIT /B 16
 )
 
-SET WRK=%TMP%
-IF NOT DEFINED %WRK% SET WRK=%TEMP%
+CALL :PROGRESS Restaurando %SRC% a partir de %BCKFILE%
+COPY /Y %SHR%\backups\%BCKFILE% %WRKTMP%\wsl_tmp_%BCKFILE%  > \\.\NUL 2> \\.\NUL
 
-DIR /B /od %SHR%\backups\base* > %WRK%\restore.txt
-SET /p BCK=< %WRK%\restore.txt
-  
-CALL :PROGRESS Restaurando %SRC% a partir de %BCK%
-  
+SET BCKFILE=%WRKTMP%\wsl_tmp_%BCKFILE% 
+%SystemDrive%
+CD %WRKTMP%
 
-SET FLG=-xzf
-:: IF %NOZIP% EQU 0 SET FLG=%FLG%z
-%WSL2_MACHINES_DRIVE%
-CD \shared\backups
-SET CMD=%BIN%\tar
+ECHO %BCKFILE% > %BIN%\grep "tar\.gz"
 
-CALL :PROGRESS Procesando
-
-ECHO %BCK% | %BIN%\grep "tar\.gz"
-if %ERRORLEVEL% EQU 0 (
+IF %ERRORLEVEL% EQU 0 (
    CALL :PROGRESS Descomprimiendo
-   %BIN%\gzip -d %BCK%
-   ECHO %BCK% | %BIN%/sed s/\.gz// > %WRK%\restore.txt
-   SET /p BCK=< %WRK%\restore.txt
-   
+   %BIN%\gzip -qfd %BCKFILE%
+   ECHO %BCKFILE% | %BIN%/sed s/\.gz// > %WRKTMP%\wsl_tmp_restore.txt
+   SET /p BCKFILE=< %WRKTMP%\wsl_tmp_restore.txt
 )
 
-echo el fichero es %BCK%
-SET FLG=-x -f
-%WSL2_MACHINES_DRIVE%
-CD \
-SET CMD=%BIN%\tar
-
 CALL :PROGRESS Restaurando
-%CMD% %FLG: =%BCK%
+%BIN%\tar --extract --directory=%SHR% --file %BKFILE%
 
 GOTO :END
 
+:SELECT_ITEM
+   :SELECT_ITEM_LOOP
+   SET /A COUNTER=1
+   FOR /F "tokens=*" %%A IN (%WRKTMP%\wsl_tmp_restore.txt) DO CALL :LISTAR %%A
+   SET /P ITEM="Seleccione el numero de la copia de seguridad deseada: "
+
+   SET /A COUNTER=1
+   FOR /F "tokens=*" %%A IN (%WRKTMP%\wsl_tmp_restore.txt) DO CALL :SELECT %%A
+   ECHO SALE DEL FOR CON %FOUND%
+   IF %FOUND% EQU 0 (
+      CALL :INFO Seleccion incorrecta %ITEM%
+      GOTO :SELECT_ITEM_LOOP
+   )
+   GOTO :EOF
+   
+:SELECT
+   IF %COUNTER% EQU %ITEM% (
+      SET BCKFILE=%1
+      SET FOUND=1
+   )
+   SET /A COUNTER=%COUNTER% + 1
+   GOTO :EOF  
+
+:LISTAR 
+  ECHO [%COUNTER%] - %1
+  SET /A COUNTER=%COUNTER% + 1
+  GOTO :EOF
+   
 :SET_NAME
    SET FNAME=/shared/backups/%SRC: =%_wsl
    IF DEFINED LBL SET FNAME=%FNAME%_%LBL: =%
@@ -125,13 +162,11 @@ GOTO :END
    GOTO :EOF
 
 :HELP
-   ECHO Crea un backup de una distro
-   ECHO %0 --name nombre [--label label] [--nozip] [--nosuffix]
+   ECHO Recupera una copia de seguridad de una distro
+   ECHO %0 --name nombre [--label label] [--file backup_file]
    ECHO    --name nombre: Nombre de la distro segun WSL
    ECHO    --label label: Etiqueta opcional para el backup  
-   ECHO    --nozip Por defecto el backup es comprimido
-   ECHO    --nosuffix Por defecto el backup llevara el timestap de creacion
-   ECHO    %BOLD%Nota: Se asume que el disco virtual de maquinas es %WSL2_MACHINES_DRIVE% %NC%
+   ECHO    --file backup_file Especifica el backup concreto a recuperar 
    GOTO END
 
 :SETDATE
@@ -151,6 +186,7 @@ GOTO :END
   GOTO :EOF
    
 :END 
+   DEL /Y %WRKTMP%\wsl_tmp*
    %CWD:~0,2%
    CD %CWD%
    EXIT /B %RC%

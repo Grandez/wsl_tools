@@ -1,0 +1,79 @@
+#!/bin/bash                                                                                                                                               
+###########################################################                                                                                               
+# Script de configuracion de la plantilla de las diferentes distros WSL                                                                                   
+# Requiere common.inc en el mismo directorio                                                                                                              
+#                                                                                                                                                         
+# Version 2                                                                                                                                               
+# Se simplifica la configuracion para ponerla en un                                                                                                       
+# solo script                                                                                                                                             
+#                                                                                                                                                         
+# Se debe incluir en el script wsl_env.cmd                                                                                                                
+#    la inforamcion necearia:                                                                                                                             
+#                                                                                                                                                         
+###########################################################                                                                                               
+preload_err() {                                                                                                                                           
+  RED='\033[0;31m'                                                                                                                                        
+  NC='\033[0m'                                                                                                                                            
+  echo -e "${RED}FALTA EL SCRIPT $* ${NC}"                                                                                                                
+}                                                                                                                                                         
+trap "exit 1" TERM                                                                                                                                        
+export PIDP=$$                                                                                                                                            
+
+SHRNIX=/mnt/s/wsl_tools/nix
+
+# Prepara cosas                                                                                                                                           
+source ${SHRNIX}/wsl_common.sh                                                                                                                  
+if [ $? -ne 0 ] ; then preload_err wsl_common.sh && exit 127 ; fi                                                                                         
+                                                                                                    
+cat ${SHRNIX}/win/wsl_env.cmd | sed s/SET/export/g | sed s/REM/#/g > ${SHR}/wsl_env.sh
+if [ $? -ne 0 ] ; then preload_err wsl_env.cmd && exit 127 ; fi                                                                                           
+dos2unix ${SHRNIX}/wsl_env.sh > /dev/null 2> /dev/null
+source ${SHRNIX}/wsl_env.sh                                                                                                                     
+if [ $? -ne 0 ] ; then preload_err wsl_common.sh && exit 127 ; fi                                                                                         
+
+export ROOT=${WSL2_MACHINES_WSL:3}                                                                                                                         
+                                                                                                                                                          
+# source ${BASE}/wsl_base_dialog.inc                                                                                                                      
+                                                                                                                                                          
+make_fs() {
+  rm -f /mnt/m
+  ln -s /mnt/c/${ROOT}/${WSL_DISTRO_NAME} /mnt/m
+}
+
+make_wsl() {                                                                                                                                              
+   info Configurando WSL y red
+   
+   MYSELF=`id -u 1000 -n`                                                                                                                                 
+
+   cp  -f /mnt/s/wsl_tools/dat/wsl.conf   /etc/wsl.conf                                                                                                   
+   sed -i "s/HOSTNAME/$WSL_DISTRO_NAME/g" /etc/wsl.conf                                                                                                   
+   sed -i "s/USER/$MYSELF/g"              /etc/wsl.conf                                                                                                   
+                                                                                                                                                          
+   grep -q $WSL_DISTRO_NAME /etc/hosts                                                                                                                    
+   if [ $? -ne 0 ] ; then                                                                                                                                 
+       echo "127.0.0.1      $WSL_DISTRO_NAME"  >> /etc/hosts                                                                                              
+   fi                                                                                                                                                     
+}                                                                                                                                                         
+
+post_installation() {
+   TYPES=$(echo $1 | tr ";" "\n")
+
+   for TYPE in $TYPES ; do
+       scr=/mnt/s/wsl_tools/wsl_install_${TYPE}.sh
+       [[ -f $scr  ]] && $scr
+       [[ $? -gt 0 ]] && err Fallo la instalacion de ${TYPE}
+   done    
+}
+test `id -u` -gt 0 && noroot
+
+# get_config            # Interfaz para informacion de usuario
+
+info Iniciando configuracion                                                                                                                              
+make_fs           
+create_log_file $0
+make_wsl                                                                                                                                                  
+
+[[ -n $1 ]] && post_installation $1
+
+info Proceso realizado                                                                                                                                    
+                                                                                                                                                          

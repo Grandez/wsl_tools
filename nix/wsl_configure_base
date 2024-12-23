@@ -1,0 +1,165 @@
+#!/bin/bash
+###########################################################
+# Script de configuracion de la plantilla de las diferentes distros WSL
+# Requiere common.inc en el mismo directorio
+#
+# Version 2
+# Se simplifica la configuracion para ponerla en un
+# solo script
+#
+# Se debe incluir en el script wsl_env.cmd
+#    la inforamcion necearia:
+# USER = Usuario corporativo
+# PWD  = password del usuario corporativo
+# GROUP = grupo del usuario corporativo
+#
+# La ruta a los archivos windows se pasa por parametro
+#
+# This software is licensed under the MIT License.
+# See the LICENSE file for more details.
+#
+###########################################################
+
+preload_err() {
+  RED='\033[0;31m'
+  NC='\033[0m'
+  echo -e "${RED}FALTA EL SCRIPT $* ${NC}"
+}
+get_dos2unix() {
+    # Si se editan mal, los scripts pueden estar en windows
+    apt update > /dev/null 2> /dev/null
+    apt install -y dos2unix > /dev/null 2> /dev/null
+}
+trap "exit 1" TERM
+export PIDP=$$
+
+# Prepara cosas
+get_dos2unix
+dos2unix -q /mnt/c/windows/temp/wsl_common.sh > /dev/null 2> /dev/null
+source /mnt/c/windows/temp/wsl_common.sh
+[ $? -ne 0 ] && preload_err wsl_common.sh && exit 127
+
+cat /mnt/c/windows/temp/wsl_env.cmd | sed s/SET/export/g | sed s/REM/#/g > /mnt/c/windows/temp/wsl_env.sh
+dos2unix /mnt/c/windows/temp/wsl_env.sh
+sed -i "s/\r//g" /mnt/c/windows/temp/wsl_env.sh
+[ $? -ne 0 ] && preload_err wsl_common.sh && exit 127
+
+source /mnt/c/windows/temp/wsl_env.sh
+[ $? -ne 0 ] && preload_err wsl_common.sh && exit 127
+
+export ROOT=${WSL2_MACHINES_WSL:3}
+                  echo ROOR es $ROOT
+# source ${BASE}/wsl_base_dialog.inc
+
+make_fs() {
+  rm -f /mnt/m
+  rm -f /mnt/s
+  ln -s /mnt/c/${ROOT}/shared  /mnt/s
+  ln -s /mnt/c/${ROOT}/${WSL_DISTRO_NAME} /mnt/m
+}
+copy_conf() {
+   touch /home/${1}/.hushlogin        > /dev/null 2> /dev/null
+   mkdir /home/${1}/.config           > /dev/null 2> /dev/null
+   mkdir /home/${1}/.config/neofetch  > /dev/null 2> /dev/null
+   cp /mnt/s/wsl_tools/dat/neofetch.conf /home/${1}/.config/neofetch/config.conf > /dev/null 2> /dev/null
+   chown -R ${1}:${1} /home/${1}/.config
+}
+make_users() {
+   info Configurando usuarios
+
+   MYSELF=`id -u 1000 -n`
+   echo MYSELF es $MYSELF
+   cat /mnt/s/wsl_tools/dat/profile.conf >> /home/${MYSELF}/.profile
+   copy_conf ${MYSELF}
+
+return 0
+   groupadd -g 3000 $WSL_GROUP >> $LOG 2>> $LOG
+   adduser --gecos "" --uid 2000 --gid 3000 --disabled-password $USER >> $LOG 2>> $LOG
+   chpasswd <<<"$USER:$PWD"
+#   useradd -u 2000 -p $PWD -G $WSL_GROUP -d /home/$WSL_USER $WSL_USER
+#   cp -f /home/${MYSELF}/.bashrc /home/${WSL_USER}
+#   cp -f /home/${MYSELF}/.bashrc /home/${WSL_USER}
+#   chown ${WSL_USER}:${WSL_USER} /home/${WSL_USER}/.bashrc
+#   chown ${WSL_USER}:${WSL_USER} /home/${WSL_USER}/.profile
+
+   copy_conf ${USER}
+    cat /mnt/s/wsl_tools/dat/zzz_wsl.sh >> /etc/profile.d
+}
+descarga_paquetes() {
+   info Descargando paquetes basicos
+
+   apt-get -qq update >> $LOG  2>> $LOG
+   apt     -qq update >> $LOG  2>> $LOG
+
+   wget -qO- https://cloud.r-project.org/bin/linux/ubuntu/marutter_pubkey.asc | sudo tee -a /etc/apt/trusted.gpg.d/cran_ubuntu_key.asc    >> $LOG 2>> $LOG
+   add-apt-repository -y "deb https://cloud.r-project.org/bin/linux/ubuntu $(lsb_release -cs)-cran40/"  >> $LOG 2>> $LOG
+
+   # No poner todos los paquetes con \ (lo de la barra ya se sabe)
+   apt-get -qq install -y net-tools                     >> $LOG 2>> $LOG
+   apt-get -qq install -y x11-apps                      >> $LOG 2>> $LOG
+   apt-get -qq install -y mesa-utils                    >> $LOG 2>> $LOG
+   apt-get -qq install -y gedit                         >> $LOG 2>> $LOG
+   apt-get -qq install -y curl                          >> $LOG 2>> $LOG
+   apt-get -qq install -y ca-certificates               >> $LOG 2>> $LOG
+   apt-get -qq install -y libcurl4-openssl-dev          >> $LOG 2>> $LOG
+   apt-get -qq install -y software-properties-common    >> $LOG 2>> $LOG
+   apt-get -qq install -y dialog                        >> $LOG 2>> $LOG
+
+   apt    -qq install -y apt-transport-https            >> $LOG 2>> $LOG
+   apt    -qq install -y dos2unix                       >> $LOG 2>> $LOG
+   apt    -qq install -y util-linux-extra               >> $LOG 2>> $LOG
+   #Hack
+   apt    -qq install -y dbus                           >> $LOG 2>> $LOG
+   apt    -qq install -y policykit-1                    >> $LOG 2>> $LOG
+   apt    -qq install -y daemonize                      >> $LOG 2>> $LOG
+   apt    -qq install -y neofetch                       >> $LOG 2>> $LOG
+
+   R --version > /dev/null 2> /dev/null
+   if [[ $eq -ne 0 ]] ; then
+        apt    -qq install -y r-base                         >> $LOG 2>> $LOG
+        apt    -qq install -y r-base-dev                     >> $LOG 2>> $LOG
+        info Instalando ecosistema R
+        R -e 'install.packages(c("xml2", "RestRserve"), dependencies=TRUE)'    >> $LOG 2>> $LOG
+   fi
+
+}
+make_wsl_base() {
+   info Configurando WSL y red
+
+   MYSELF=`ls /home`
+
+   cp  -f /mnt/s/wsl_tools/dat/wsl.conf   /etc/wsl.conf
+   sed -i "s/HOSTNAME/$WSL_DISTRO_NAME/g" /etc/wsl.conf
+   sed -i "s/USER/$MYSELF/g"              /etc/wsl.conf
+
+   grep -q $WSL_DISTRO_NAME /etc/hosts
+   [ $? -ne 0 ] && echo "127.0.0.1      $WSL_DISTRO_NAME"  >> /etc/hosts
+}
+
+make_hack() {
+   cp  -f /mnt/s/wsl_tools/dat/wsl2hack /usr/local/bin/wsl2hack
+   sed -i s/MYSELF/$MYSELF/g            /usr/local/bin/wsl2hack
+   chmod +x /usr/local/bin/wsl2hack
+
+   cp  -f /mnt/s/wsl_tools/dat/rc.local /etc
+   chmod +x /etc/rc.local
+}
+
+test `id -u` -gt 0 && noroot
+
+# get_config            # Interfaz para informacion de usuario
+
+info Iniciando configuracion
+make_fs
+create_log_file $0
+descarga_paquetes
+make_wsl_base    # Antes de crear usuarios
+# make_users
+make_hack
+
+echo Linea rootwsl:x:0:0:root:/root:/usr/local/bin/wsl2hack
+echo comandos: vipw
+echo comandos: vipw -s
+
+
+info Proceso realizado

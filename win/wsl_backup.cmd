@@ -11,6 +11,9 @@
 :: History 
 ::   v2 - Se hace copia de todo: maquina y datos en un unico archivo 
 ::
+:: Este software se distribuye de acuerdo con la licencia/EULA MIT
+:: Ver LICENSE para mas informacion (en ingles)
+::
 :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
 @ECHO OFF
@@ -38,7 +41,7 @@ IF %ERRORLEVEL% NEQ 0 (
 
 SET SHR=%WSL2_MACHINES_DRIVE%\shared
 SET TOOLS=%SHR%\wsl_tools
-SET BIN=%TOOLS%\pkg
+SET BIN=%TOOLS%\bin
 
 :GETOPTS
    IF /I "%~1"== "-H"         GOTO HELP
@@ -46,7 +49,7 @@ SET BIN=%TOOLS%\pkg
    IF /I "%1" == "--name"     SET SRC=%2  & shift
    IF /I "%1" == "--label"    SET LBL=%2  & shift   
    IF /I "%1" == "--nozip"    SET NOZIP=1 & shift
-   IF /I "%1" == "--noSUFFIX" SET NOSFX=1 & shift   
+   IF /I "%1" == "--nosuffix" SET NOSFX=1 & shift   
    SHIFT
    IF NOT "%1" == "" goto GETOPTS
 
@@ -99,7 +102,7 @@ IF %NOZIP% EQU 0 (
 GOTO :END
 
 :SET_NAME
-   SET FNAME=/shared/backups/%SRC: =%_wsl
+   SET FNAME=/shared/backups/%PRFX1%%SRC: =%_wsl
    IF DEFINED LBL SET FNAME=%FNAME%_%LBL: =%
    IF %NOSFX% EQU 0 (
       CALL :SETDATE

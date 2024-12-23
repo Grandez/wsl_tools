@@ -5,10 +5,14 @@
 ::
 :: Options:
 ::   --name     La distro a restaurar
-::   --choose   Permite elegir la copia de seguridad
+::   --label    etiqueta adicional usada para el backup
+::   --file     Copai de seguridad a recuperar
 ::
 :: History 
 ::   v1 - Pasa del choose, coge la ultima
+::
+:: Este software se distribuye de acuerdo con la licencia/EULA MIT
+:: Ver LICENSE para mas informacion (en ingles)
 ::
 :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
@@ -17,6 +21,7 @@
 SET SRC=
 SET LBL=
 SET BCK=
+SET TPL=
 SET NOZIP=0
 SET NOSFX=0
 SET CWD=%CD%
@@ -36,9 +41,7 @@ IF %ERRORLEVEL% NEQ 0 (
    exit /b 32
 )   
 
-SET SHR=%WSL2_MACHINES_DRIVE%\shared
-SET TOOLS=%SHR%\wsl_tools
-SET BIN=%TOOLS%\pkg
+SET FLOG=%SHR%\logs\%~n0.log
 
 :GETOPTS
    IF /I "%~1"== "-H"         GOTO HELP
@@ -54,30 +57,30 @@ IF NOT DEFINED SRC (
    EXIT /B 16
 )   
 
-IF DEFINED SRC SET SRC=%SRC: =%
-IF DEFINED LBL SET LBL=%LBL: =%
-IF DEFINED BCK (
-   SET TPL=%BCK: =%
-) ELSE (
-  SET TPL=%SRC%_wsl
-  IF DEFINED LBL SET TPL=%TPL%_%LBL%
-)
+IF DEFINED BCK SET TPL=%BCK: =%
+IF DEFINED BCK GOTO :PREDIR
 
-:: Guardar los nombres delos backups en un fichero
-DIR /B /OD %SHR%\backups\%TPL%* > %WRKTMP%\wsl_tmp_restore.txt
+SET TPL=%PRFX1%%SRC: =%
+
+IF DEFINED LBL SET TPL=%TPL%_%LBL: =%
+
+:: Guardar los nombres de los backups en un fichero
+SET FRESTORE=%WRKTMP%\%PRFX1%restore.txt
+DIR /B /OD %SHR%\backups\%TPL%* > %FRESTORE% 2> \\.\NUL
 IF %ERRORLEVEL% NEQ 0 (
    CALL :INFO No hay copias de seguridad disponibles para los criterios indicados
    EXIT /B 4
 )
 
 :: Chequear si hay uno o mas
-%BIN%\wc -l %WRKTMP%\wsl_tmp_restore.txt > %WRKTMP%\wsl_tmp_count.txt
+SET FCOUNT=%WRKTMP%\%PRFX1%count.txt
+%BIN%\wc -l %FRESTORE% > %FCOUNT%
 SET /A COUNTER=0
-FOR /F "tokens=1" %%A IN (%WRKTMP%\wsl_tmp_count.txt) DO SET /A COUNTER=%%A
+FOR /F "tokens=1" %%A IN (%FCOUNT%) DO SET /A COUNTER=%%A
 
 :: Si hay varios seleccionar
 SET FOUND=0
-IF %COUNTER% EQU 1 FOR /F "tokens=*" %%A IN (%WRKTMP%\wsl_tmp_restore.txt) DO SET BCKFILE=%%A
+IF %COUNTER% EQU 1 FOR /F "tokens=*" %%A IN (%FRESTORE%) DO SET BCKFILE=%%A
 IF %COUNTER% GTR 1 CALL :SELECT_ITEM
 
 :: Forzar a parar la distro, ezperando si es necesario
@@ -89,12 +92,12 @@ IF %ERRORLEVEL% NEQ 0 (
 
 SET COUNTER=0
 :WAITING
-wsl -l -v | %BIN%\iconv -f UTF-16LE -t UTF-8 | %BIN%\grep %SRC% | %BIN%\grep -q topped
-IF %ERRORLEVEL% NEQ 0 (
-   TIMEOUT /T 1 /NOBREAK
-   SET /A COUNTER=COUNTER+1
-   IF %COUNTER% LEQ 10 GOTO :WAITING
-)
+    wsl -l -v | %BIN%\iconv -f UTF-16LE -t UTF-8 | %BIN%\grep %SRC% | %BIN%\grep -q topped
+    IF %ERRORLEVEL% NEQ 0 (
+       TIMEOUT /T 1 /NOBREAK
+       SET /A COUNTER=COUNTER+1
+       IF %COUNTER% LEQ 10 GOTO :WAITING
+    )
 
 wsl -l -v | %BIN%\iconv -f UTF-16LE -t UTF-8 | %BIN%\grep %SRC% | %BIN%\grep -q topped
 IF %ERRORLEVEL% NEQ 0 (
@@ -102,36 +105,61 @@ IF %ERRORLEVEL% NEQ 0 (
    EXIT /B 16
 )
 
-CALL :PROGRESS Restaurando %SRC% a partir de %BCKFILE%
-COPY /Y %SHR%\backups\%BCKFILE% %WRKTMP%\wsl_tmp_%BCKFILE%  > \\.\NUL 2> \\.\NUL
+CALL :PROGRESS Restaurando %BCKFILE%
 
-SET BCKFILE=%WRKTMP%\wsl_tmp_%BCKFILE% 
+SET WRKFILE=%PRFX2%%BCKFILE%
+COPY /Y %SHR%\backups\%BCKFILE% %WRKTMP%\%WRKFILE%  > \\.\NUL 2> \\.\NUL
+
 %SystemDrive%
 CD %WRKTMP%
 
-ECHO %BCKFILE% > %BIN%\grep "tar\.gz"
+ECHO %WRKFILE% | %BIN%\grep -q "tar\.gz"
 
-IF %ERRORLEVEL% EQU 0 (
-   CALL :PROGRESS Descomprimiendo
-   %BIN%\gzip -qfd %BCKFILE%
-   ECHO %BCKFILE% | %BIN%/sed s/\.gz// > %WRKTMP%\wsl_tmp_restore.txt
-   SET /p BCKFILE=< %WRKTMP%\wsl_tmp_restore.txt
+IF NOT %ERRORLEVEL% EQU 0 GOTO :MAKETAR
+
+echo wrk es %WRKFILE%
+
+CALL :PROGRESS Descomprimiendo
+%BIN%\gzip -qfd %WRKFILE%         
+IF %ERRORLEVEL% NEQ 0 (
+   CALL :ERR No se ha podido descopmprimir el archivo
+   EXIT /B 12
 )
 
-CALL :PROGRESS Restaurando
-%BIN%\tar --extract --directory=%SHR% --file %BKFILE%
+ECHO %WRKFILE% > %FRESTORE%
+%BIN%/sed -i s/\.gz// %FRESTORE%
+SET /P WRKFILE=< %FRESTORE%
 
+
+:MAKETAR
+   CALL :PROGRESS Restaurando
+
+   CD %WRKTMP%
+   :: Ojo con las rutas en el tar (/\\ etc)
+   %BIN%\tar -xf %WRKFILE%
+
+   IF %ERRORLEVEL% NEQ 0 (
+      CALL :ERR Ha ocurrido un error al restaurar la copia de seguridad
+      SET RC=12
+      GOTO :END
+   )      
+   XCOPY /E /C /I /Q /H /R /Y %WRKTMP%\%SRC% %WSL2_MACHINES_DRIVE%\%SRC%  > \\.\NUL 2> \\.\NUL
+
+   IF %ERRORLEVEL% NEQ 0 (
+      CALL :ERR Ha ocurrido un error al mover la copia de seguridad   
+      SET RC=12
+   )      
+   
 GOTO :END
 
 :SELECT_ITEM
    :SELECT_ITEM_LOOP
    SET /A COUNTER=1
-   FOR /F "tokens=*" %%A IN (%WRKTMP%\wsl_tmp_restore.txt) DO CALL :LISTAR %%A
+   FOR /F "tokens=*" %%A IN (%FRESTORE%) DO CALL :LISTAR %%A
    SET /P ITEM="Seleccione el numero de la copia de seguridad deseada: "
 
    SET /A COUNTER=1
-   FOR /F "tokens=*" %%A IN (%WRKTMP%\wsl_tmp_restore.txt) DO CALL :SELECT %%A
-   ECHO SALE DEL FOR CON %FOUND%
+   FOR /F "tokens=*" %%A IN (%FRESTORE%) DO CALL :SELECT %%A
    IF %FOUND% EQU 0 (
       CALL :INFO Seleccion incorrecta %ITEM%
       GOTO :SELECT_ITEM_LOOP
@@ -161,14 +189,6 @@ GOTO :END
    SET FNAME=%FNAME: =%.tar
    GOTO :EOF
 
-:HELP
-   ECHO Recupera una copia de seguridad de una distro
-   ECHO %0 --name nombre [--label label] [--file backup_file]
-   ECHO    --name nombre: Nombre de la distro segun WSL
-   ECHO    --label label: Etiqueta opcional para el backup  
-   ECHO    --file backup_file Especifica el backup concreto a recuperar 
-   GOTO END
-
 :SETDATE
   SET YYYYMMDD=%DATE:~6,4%%DATE:~3,2%%DATE:~0,2%
   SET HHMMSS=%TIME:~0,2%%TIME:~3,2%%TIME:~6,2%
@@ -176,17 +196,29 @@ GOTO :END
   GOTO :EOF
 
 :PROGRESS
-  echo %GREEN%%T% - %* %NC%
+  echo %GREEN%%T% - %* %NC% | %BIN%\tee -a %FLOG%
   GOTO :EOF
+  
 :INFO
-  echo %WARN%%T% - %* %NC%
+  echo %WARN%%T% - %* %NC%  | %BIN%\tee -a %FLOG%
   GOTO :EOF
 :ERR
-  ECHO %RED%%T% - %* %NC% 1>&2
+  ECHO %RED%%T% - %* %NC% 1>&2  | %BIN%\tee -a %FLOG%
   GOTO :EOF
+
+:HELP
+   ECHO Recupera una copia de seguridad de una distro
+   ECHO %0 --name nombre [--label label] [--file backup_file]
+   ECHO    --name nombre: Nombre de la distro segun WSL
+   ECHO    --label label: Etiqueta opcional para el backup  
+   ECHO    --file backup_file Especifica el backup concreto a recuperar 
+   GOTO END
    
 :END 
-   DEL /S /Q %WRKTMP%\wsl_tmp* > \\.\NUL 2> \\.\NUL
+   DEL /S /Q %WRKTMP%\sed*              > \\.\NUL 2> \\.\NUL
+   DEL /S /Q %WRKTMP%\%PRFX2%%PRFX1%*   > \\.\NUL 2> \\.\NUL
+   DEL /S /Q %WRKTMP%\%PRFX1%*          > \\.\NUL 2> \\.\NUL   
+   RD  /S /Q %WRKTMP%\%SRC%
    %CWD:~0,2%
    CD %CWD%
    EXIT /B %RC%

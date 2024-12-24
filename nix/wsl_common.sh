@@ -32,6 +32,10 @@ info() {
 info2() {
    echo -e ${WARN}`date +%T` - $@${NC} | tee -a $LOG
 }
+warn() {
+   echo -e ${WARN}`date +%T` - $@${NC} | tee -a $LOG
+}
+
 err() {
    2stderr ${ERR} $* ${NC} 
    kill -s TERM $PIDP
@@ -44,4 +48,18 @@ create_log_file () {
    NAME=${CMD%%.*} 
    export LOG=/mnt/s/logs/${WSL_DISTRO_NAME}_${NAME}.log
    touch $LOG
+}
+
+
+stop_service() {
+   info Deteniendo $1
+
+   while : ; do
+       systemctl is-active --quiet $1
+       [[ $? -ne 0 ]] && break
+       systemctl stop $1
+       sleep 2 # Para los triggers
+   done
+   sleep 2 # Este va de propina
+    
 }

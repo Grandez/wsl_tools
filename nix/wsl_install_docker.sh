@@ -46,7 +46,6 @@ apt-get update >> $LOG 2>> $LOG
 apt-get -qq install -y docker-ce \
                        docker-ce-cli \
                        containerd.io \
-                       docker-buildx-plugin \
                        docker-compose-plugin >> $LOG 2>> $LOG
                        
 info2 Configurando Docker
@@ -58,14 +57,31 @@ mkdir /mnt/m/docker/data   >> $LOG 2>> $LOG
 
 info Deteniendo servicio
 
+echo deteniendo servicio
 while : ; do
     systemctl is-active --quiet docker
-    [[ $? -ne 0 ]] || break
+    [[ $? -ne 0 ]] && break
     systemctl stop docker
-    sleep 1
+    sleep 2 # Para los triggers
 done
 
 
-if  
-cp -f /mnt/s/wsl_tools/dat/docker.json /etc/docker/daemon.json
-chown root:docker /etc/docker/daemon.json
+# Configuracion a daemon.json
+# Cambiamos el socket
+
+echo copiando ficheros
+cp -f /mnt/s/wsl_tools/dat/docker.json     /etc/docker/daemon.json
+cp -f /mnt/s/wsl_tools/dat/docker.sh       /etc/profile.d/docker.sh
+cp -f /mnt/s/wsl_tools/dat/docker.service  /usr/lib/systemd/docker.service
+
+chown root:root /etc/docker/daemon.json
+chown root:root /etc/profile.d/docker.sh
+chown root:root /usr/lib/systemd/docker.service
+chmod 775 /etc/profile.d/docker.sh
+chmod 644 /usr/lib/systemd/docker.service
+
+echo configurando
+sed -i "s/var\/run\/docker\.sock/var\/run\/${WSL_DISTRO_NAME}_docker\.sock/g" /etc/docker/daemon.json
+sed -i "s/var\/run\/docker\.sock/var\/run\/${WSL_DISTRO_NAME}_docker\.sock/g" /etc/profile.d/docker.sh
+
+chmod u+s /usr/bin/dock*

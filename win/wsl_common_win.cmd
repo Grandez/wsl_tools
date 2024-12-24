@@ -17,8 +17,8 @@ SET ERR=%RED%
 
 SET T=%TIME:~0,8%
 SET LOG=%TEMP%\wsl.log
-SET PRFX1=wsl_
-SET PRFX2=tmp_
+SET PRFXWSL=wsl_
+SET PRFXTMP=tmp_
 
 SET SHR=%WSL2_MACHINES_DRIVE%\shared
 SET TOOLS=%SHR%\wsl_tools

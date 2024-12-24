@@ -1,4 +1,4 @@
 {
    "data-root": "/mnt/m/docker/data"
-  ,"hosts": ["fd://","unix:///var/run/docker.sock","tcp://0.0.0.0:2376"],
+  ,"hosts": ["fd://","unix:///var/run/docker.sock","tcp://0.0.0.0:2376"]
 }

@@ -22,8 +22,6 @@ SET SRC=
 SET LBL=
 SET BCK=
 SET TPL=
-SET NOZIP=0
-SET NOSFX=0
 SET CWD=%CD%
 
 SET mypath=%~dp0
@@ -57,15 +55,18 @@ IF NOT DEFINED SRC (
    EXIT /B 16
 )   
 
-IF DEFINED BCK SET TPL=%BCK: =%
+SET FRESTORE=%WRKTMP%\%PRFXWSL%restore.txt
+
+IF DEFINED BCK SET BCKFILE=%BCK: =%
+IF DEFINED BCK ECHO %BCKFILE% > %FRESTORE%
 IF DEFINED BCK GOTO :PREDIR
 
-SET TPL=%PRFX1%%SRC: =%
+SET TPL=%SRC: =%
 
 IF DEFINED LBL SET TPL=%TPL%_%LBL: =%
 
 :: Guardar los nombres de los backups en un fichero
-SET FRESTORE=%WRKTMP%\%PRFX1%restore.txt
+
 DIR /B /OD %SHR%\backups\%TPL%* > %FRESTORE% 2> \\.\NUL
 IF %ERRORLEVEL% NEQ 0 (
    CALL :INFO No hay copias de seguridad disponibles para los criterios indicados
@@ -73,7 +74,7 @@ IF %ERRORLEVEL% NEQ 0 (
 )
 
 :: Chequear si hay uno o mas
-SET FCOUNT=%WRKTMP%\%PRFX1%count.txt
+SET FCOUNT=%WRKTMP%\%PRFXWSL%count.txt
 %BIN%\wc -l %FRESTORE% > %FCOUNT%
 SET /A COUNTER=0
 FOR /F "tokens=1" %%A IN (%FCOUNT%) DO SET /A COUNTER=%%A
@@ -83,7 +84,8 @@ SET FOUND=0
 IF %COUNTER% EQU 1 FOR /F "tokens=*" %%A IN (%FRESTORE%) DO SET BCKFILE=%%A
 IF %COUNTER% GTR 1 CALL :SELECT_ITEM
 
-:: Forzar a parar la distro, ezperando si es necesario
+:PREDIR
+:: Forzar a parar la distro, esperando si es necesario
 WSL --terminate %SRC% > \\.\NUL 2> \\.\NUL
 IF %ERRORLEVEL% NEQ 0 (
    CALL :ERR  No existe la distro %SRC%
@@ -107,8 +109,9 @@ IF %ERRORLEVEL% NEQ 0 (
 
 CALL :PROGRESS Restaurando %BCKFILE%
 
-SET WRKFILE=%PRFX2%%BCKFILE%
+SET WRKFILE=%PRFXTMP%%BCKFILE%
 COPY /Y %SHR%\backups\%BCKFILE% %WRKTMP%\%WRKFILE%  > \\.\NUL 2> \\.\NUL
+
 
 %SystemDrive%
 CD %WRKTMP%
@@ -117,19 +120,16 @@ ECHO %WRKFILE% | %BIN%\grep -q "tar\.gz"
 
 IF NOT %ERRORLEVEL% EQU 0 GOTO :MAKETAR
 
-echo wrk es %WRKFILE%
-
 CALL :PROGRESS Descomprimiendo
+
 %BIN%\gzip -qfd %WRKFILE%         
 IF %ERRORLEVEL% NEQ 0 (
    CALL :ERR No se ha podido descopmprimir el archivo
    EXIT /B 12
 )
 
-ECHO %WRKFILE% > %FRESTORE%
-%BIN%/sed -i s/\.gz// %FRESTORE%
+echo %WRKFILE% | %BIN%\sed s/\.gz//g > %FRESTORE%
 SET /P WRKFILE=< %FRESTORE%
-
 
 :MAKETAR
    CALL :PROGRESS Restaurando
@@ -143,6 +143,7 @@ SET /P WRKFILE=< %FRESTORE%
       SET RC=12
       GOTO :END
    )      
+
    XCOPY /E /C /I /Q /H /R /Y %WRKTMP%\%SRC% %WSL2_MACHINES_DRIVE%\%SRC%  > \\.\NUL 2> \\.\NUL
 
    IF %ERRORLEVEL% NEQ 0 (
@@ -179,22 +180,6 @@ GOTO :END
   SET /A COUNTER=%COUNTER% + 1
   GOTO :EOF
    
-:SET_NAME
-   SET FNAME=/shared/backups/%SRC: =%_wsl
-   IF DEFINED LBL SET FNAME=%FNAME%_%LBL: =%
-   IF %NOSFX% EQU 0 (
-      CALL :SETDATE
-      SET FNAME=%FNAME%_%TMS%   
-   )
-   SET FNAME=%FNAME: =%.tar
-   GOTO :EOF
-
-:SETDATE
-  SET YYYYMMDD=%DATE:~6,4%%DATE:~3,2%%DATE:~0,2%
-  SET HHMMSS=%TIME:~0,2%%TIME:~3,2%%TIME:~6,2%
-  SET TMS=%YYYYMMDD%%HHMMSS%
-  GOTO :EOF
-
 :PROGRESS
   echo %GREEN%%T% - %* %NC% | %BIN%\tee -a %FLOG%
   GOTO :EOF
@@ -212,13 +197,14 @@ GOTO :END
    ECHO    --name nombre: Nombre de la distro segun WSL
    ECHO    --label label: Etiqueta opcional para el backup  
    ECHO    --file backup_file Especifica el backup concreto a recuperar 
-   GOTO END
+   GOTO END2
    
 :END 
-   DEL /S /Q %WRKTMP%\sed*              > \\.\NUL 2> \\.\NUL
-   DEL /S /Q %WRKTMP%\%PRFX2%%PRFX1%*   > \\.\NUL 2> \\.\NUL
-   DEL /S /Q %WRKTMP%\%PRFX1%*          > \\.\NUL 2> \\.\NUL   
+   DEL /S /Q %WRKTMP%\sed*         > \\.\NUL 2> \\.\NUL
+   DEL /S /Q %WRKTMP%\%PRFXWSL%*   > \\.\NUL 2> \\.\NUL
+   DEL /S /Q %WRKTMP%\%PRFXTMP%*   > \\.\NUL 2> \\.\NUL   
    RD  /S /Q %WRKTMP%\%SRC%
    %CWD:~0,2%
    CD %CWD%
+:END2   
    EXIT /B %RC%

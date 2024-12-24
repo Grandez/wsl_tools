@@ -87,7 +87,7 @@ CALL :PROGRESS Haciendo backup de la distro %SRC%
 CALL :SET_NAME
 
 SET FLG=-c -f
-:: IF %NOZIP% EQU 0 SET FLG=%FLG%z
+
 %WSL2_MACHINES_DRIVE%
 CD \
 SET CMD=%BIN%\tar
@@ -102,7 +102,7 @@ IF %NOZIP% EQU 0 (
 GOTO :END
 
 :SET_NAME
-   SET FNAME=/shared/backups/%PRFX1%%SRC: =%_wsl
+   SET FNAME=/shared/backups/%SRC: =%
    IF DEFINED LBL SET FNAME=%FNAME%_%LBL: =%
    IF %NOSFX% EQU 0 (
       CALL :SETDATE

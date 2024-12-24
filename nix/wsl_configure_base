@@ -68,8 +68,8 @@ make_users() {
    info Configurando usuarios
 
    MYSELF=`id -u 1000 -n`
-   echo MYSELF es $MYSELF
-   cat /mnt/s/wsl_tools/dat/profile.conf >> /home/${MYSELF}/.profile
+   grep -q WSLADDED /home/${MYSELF}/.profile
+   [[ $? -gt 0 ]] && cat /mnt/s/wsl_tools/dat/profile.conf >> /home/${MYSELF}/.profile
    copy_conf ${MYSELF}
 
 return 0

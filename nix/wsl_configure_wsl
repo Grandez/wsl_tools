@@ -54,7 +54,13 @@ make_wsl() {
        echo "127.0.0.1      $WSL_DISTRO_NAME"  >> /etc/hosts                                                                                              
    fi                                                                                                                                                     
 }                                                                                                                                                         
-
+make_conf() {
+    echo machine=$WSL_DISTRO_NAME >   /etc/machine.conf
+    echo user=$MYSELF             >>  /etc/machine.conf
+    TYPE=general
+    [[ -n $1 ]] && TYPE=$1
+    echo type=$TYPE               >>  /etc/machine.conf
+}
 post_installation() {
    TYPES=$(echo $1 | tr ";" "\n")
 
@@ -69,9 +75,10 @@ test `id -u` -gt 0 && noroot
 # get_config            # Interfaz para informacion de usuario
 
 info Iniciando configuracion                                                                                                                              
-make_fs           
+make_fs
 create_log_file $0
-make_wsl                                                                                                                                                  
+make_wsl
+make_conf $1
 
 [[ -n $1 ]] && post_installation $1
 

@@ -1,3 +1,14 @@
+#######################################################################
+# Funciones, variables y entorno comun para todos los scripts
+# 
+# Se carga con source 
+# Se puede tambien con . name
+#
+# This software is licensed under the MIT License.
+# See the LICENSE file for more details.
+#
+###########################################################
+
 # Mensajes y herramietns comunes
 
 RED='\033[0;31m'

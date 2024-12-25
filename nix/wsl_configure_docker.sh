@@ -57,6 +57,28 @@ custom_environment() {
    ln -s ${SRV}/docker.service ${LNK}/docker.service > /dev/null 2> /dev/null
    ln -s ${SRV}/docker.socket  ${LNK}/docker.socket  > /dev/null 2> /dev/null
 }
+custom_docker() {
+    [[ -f /var/lib/docker/containers.old ]]  && return
+    mv /var/lib/docker/containers /var/lib/docker/containers.old
+    mv /var/lib/docker/volumes    /var/lib/docker/volumes.old
+    ln -s /mnt/s/docker/data/containers /var/lib/docker/containers
+    ln -s /mnt/s/docker/data/volumes    /var/lib/docker/volumes
+}
+custom_user() {
+    tok=`grep default /etc/wsl.conf`
+    USER=`echo ${tok##*=} | xargs`
+    
+    if [[ -f .bash_aliases ]] ; then
+        grep -q docker .bash_aliases
+        [[ $? -gt 0 ]] && cat $DAT/alias_docker.sh >> /home/$USER/.bash_aliases
+    else
+        cp $DAT/alias_docker.sh  /home/$USER/.bash_aliases
+    fi
+    chown $USER:$USER  /home/$USER/.bash_aliases
+    
+    cp -f /mnt/m/dat/local/docker/* /usr/bin/local
+    chmod 777 /usr/bin/local *
+}
 prepare_environment() {
   info creando entorno  
   mkdir /mnt/m/conf          > /dev/null 2> /dev/null
@@ -74,6 +96,8 @@ prepare_environment() {
 stop_service docker
 prepare_environment
 custom_environment
+custom_docker
+custom_user
 
 systemctl --system daemon-reload
 warn Salga del sistema

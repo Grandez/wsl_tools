@@ -42,6 +42,7 @@ IF %ERRORLEVEL% NEQ 0 (
 SET SHR=%WSL2_MACHINES_DRIVE%\shared
 SET TOOLS=%SHR%\wsl_tools
 SET BIN=%TOOLS%\bin
+SET BCK=%WSL2_MACHINES_DRIVE%\backups
 
 :GETOPTS
    IF /I "%~1"== "-H"         GOTO HELP
@@ -102,7 +103,7 @@ IF %NOZIP% EQU 0 (
 GOTO :END
 
 :SET_NAME
-   SET FNAME=/shared/backups/%SRC: =%
+   SET FNAME=%BCK%/%SRC: =%
    IF DEFINED LBL SET FNAME=%FNAME%_%LBL: =%
    IF %NOSFX% EQU 0 (
       CALL :SETDATE

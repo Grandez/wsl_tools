@@ -1,0 +1,32 @@
+#!/bin/bash
+#######################################################################
+# Construye una imagen docker dentro de la arquitectura
+#
+# Uso: dbuild app [opciones]
+#
+# Este software se distribuye de acuerdo con la licencia/EULA MIT
+# Ver LICENSE para mas informacion (en ingles)
+#
+#######################################################################
+
+RED='\033[0;31m'
+BOLD='\033[1m'
+NC='\033[0m' 
+
+if [[ $# -eq 0 ]] ; then
+   echo -e ${RED}Falta la aplicacion a construir${NC} 1>&2
+   exit 1
+fi      
+
+CWD=`cwd`
+APP=$1
+shift
+
+cd /mnt/m/apps/$APP > /dev/null 2> /dev/null
+if [[ $# -ne 0 ]] ; then
+   echo -e ${RED}No existe la aplciacion $APP${NC} 1>&2
+   exit 12
+fi      
+
+docker build -t $APP -f ${APP}.docker $*
+cd $CWD

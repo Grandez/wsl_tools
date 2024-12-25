@@ -46,12 +46,16 @@ apt-get update >> $LOG 2>> $LOG
 apt-get -qq install -y docker-ce \
                        docker-ce-cli \
                        containerd.io \
+                       docker-buildx-plugin \
                        docker-compose-plugin >> $LOG 2>> $LOG
                        
 info2 Configurando Docker
 
-mkdir /mnt/m/docker        >> $LOG 2>> $LOG
-mkdir /mnt/m/docker/data   >> $LOG 2>> $LOG
+mkdir /mnt/m/apps                   >> $LOG 2>> $LOG
+mkdir /mnt/m/docker                 >> $LOG 2>> $LOG
+mkdir /mnt/m/docker/data            >> $LOG 2>> $LOG
+mkdir /mnt/m/docker/data/containers >> $LOG 2>> $LOG
+mkdir /mnt/m/docker/data/volumes    >> $LOG 2>> $LOG
 
 # Parar Docker
 

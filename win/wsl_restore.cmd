@@ -39,6 +39,7 @@ IF %ERRORLEVEL% NEQ 0 (
    exit /b 32
 )   
 
+SET BCK=%WSL2_MACHINES_DRIVE%\backups
 SET FLOG=%SHR%\logs\%~n0.log
 
 :GETOPTS
@@ -67,7 +68,7 @@ IF DEFINED LBL SET TPL=%TPL%_%LBL: =%
 
 :: Guardar los nombres de los backups en un fichero
 
-DIR /B /OD %SHR%\backups\%TPL%* > %FRESTORE% 2> \\.\NUL
+DIR /B /OD %BCK%\%TPL%* > %FRESTORE% 2> \\.\NUL
 IF %ERRORLEVEL% NEQ 0 (
    CALL :INFO No hay copias de seguridad disponibles para los criterios indicados
    EXIT /B 4
@@ -110,7 +111,7 @@ IF %ERRORLEVEL% NEQ 0 (
 CALL :PROGRESS Restaurando %BCKFILE%
 
 SET WRKFILE=%PRFXTMP%%BCKFILE%
-COPY /Y %SHR%\backups\%BCKFILE% %WRKTMP%\%WRKFILE%  > \\.\NUL 2> \\.\NUL
+COPY /Y %BCK%\%BCKFILE% %WRKTMP%\%WRKFILE%  > \\.\NUL 2> \\.\NUL
 
 
 %SystemDrive%
